@@ -25,8 +25,10 @@ async fn create_checkout_session(
     let user = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await?;
     let prof = find_or_create_for_user(&ctx.db, user.id).await?;
 
-    let secret_key = std::env::var("STRIPE_SECRET_KEY")
-        .unwrap_or_else(|_| "sk_test_51U6IkALTtCtvRRHBhqoLSaDjlUQ8oyV4tDzQrHbcqrtawTDRrqKC0G7UdVi5siTIVH5V0RgQ0feUNLWHJK8dcesN00ANxRRrk7".to_string());
+    let mut secret_key = std::env::var("STRIPE_SECRET_KEY").unwrap_or_default();
+    if secret_key.trim().is_empty() {
+        secret_key = "sk_test_51U6IkALTtCtvRRHBhqoLSaDjlUQ8oyV4tDzQrHbcqrtawTDRrqKC0G7UdVi5siTIVH5V0RgQ0feUNLWHJK8dcesN00ANxRRrk7".to_string();
+    }
     
     let price_id = if payload.plan == "premium" {
         std::env::var("STRIPE_PRICE_ID_PREMIUM").unwrap_or_else(|_| "price_1U6TgcLTtCtvRRHBPoFgenQ0".to_string())
@@ -43,10 +45,14 @@ async fn create_checkout_session(
         ..Default::default()
     };
     
+    let base_url = std::env::var("APP_URL").unwrap_or_else(|_| "https://app.agilizapro.net".to_string());
+    let success = format!("{}/pro/planos?success=true", base_url);
+    let cancel = format!("{}/pro/planos?canceled=true", base_url);
+
     session_params.line_items = Some(vec![line_item]);
     session_params.mode = Some(stripe::CheckoutSessionMode::Subscription);
-    session_params.success_url = Some("http://localhost:3000/pro/planos?success=true");
-    session_params.cancel_url = Some("http://localhost:3000/pro/planos?canceled=true");
+    session_params.success_url = Some(&success);
+    session_params.cancel_url = Some(&cancel);
     
     let prof_id_str = prof.id.to_string();
     session_params.client_reference_id = Some(&prof_id_str);
@@ -59,9 +65,15 @@ async fn create_checkout_session(
         session_params.customer_email = Some(&user.email);
     }
 
-    let checkout_session = stripe::CheckoutSession::create(&client, session_params)
-        .await
-        .map_err(|e| Error::Message(format!("Stripe Error: {:?}", e)))?;
+    let checkout_session = match stripe::CheckoutSession::create(&client, session_params).await {
+        Ok(session) => session,
+        Err(e) => {
+            tracing::error!("Stripe Checkout Error: {:?}", e);
+            return format::json(serde_json::json!({
+                "error": format!("Erro na integração do Stripe: {:?}", e)
+            }));
+        }
+    };
 
     let url = checkout_session
         .url
