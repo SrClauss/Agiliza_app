@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Servidor Backend em Rust (Loco / Axum)
+  backend:
+    build:
+      context: ./agiliza_loco
+      dockerfile: Dockerfile
+    container_name: agiliza_backend
+    ports:
+      - "5150:5150"
+    environment:
+      - PORT=5150
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_51U6IkALTtCtvRRHBhqoLSaDjlUQ8oyV4tDzQrHbcqrtawTDRrqKC0G7UdVi5siTIVH5V0RgQ0feUNLWHJK8dcesN00ANxRRrk7}
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY:-pk_test_51U6IkALTtCtvRRHBnQdvWLkTvvDBIvxjIJtEgKI8knnEiWrFJQKphvUa4XHJf32ASTOG9K17UZV0I1CXZFyThO1F0016s5Tste}
+      - STRIPE_PRICE_ID_PRO=${STRIPE_PRICE_ID_PRO:-price_1U6TgbLTtCtvRRHBjbPo5XbI}
+      - STRIPE_PRICE_ID_PREMIUM=${STRIPE_PRICE_ID_PREMIUM:-price_1U6TgcLTtCtvRRHBPoFgenQ0}
+    restart: unless-stopped
+
+  # Servidor Frontend em Next.js
+  frontend:
+    build:
+      context: ./agiliza_web
+      dockerfile: Dockerfile
+    container_name: agiliza_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5150
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # Container do Stripe CLI para rotear webhooks automaticamente para o backend local
+  stripe-cli:
+    image: stripe/stripe-cli:v1.23.0
+    container_name: agiliza_stripe_cli
+    command: >
+      listen
+      --api-key ${STRIPE_SECRET_KEY:-sk_test_51U6IkALTtCtvRRHBhqoLSaDjlUQ8oyV4tDzQrHbcqrtawTDRrqKC0G7UdVi5siTIVH5V0RgQ0feUNLWHJK8dcesN00ANxRRrk7}
+      --forward-to backend:5150/api/billing/webhook
+    depends_on:
+      - backend
+    restart: unless-stopped

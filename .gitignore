@@ -1,0 +1,34 @@
+# Environment variables and secrets (CRITICAL PROTECTIONS)
+.env
+.env*
+!.env.example
+*.env
+
+# SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs and PID files
+*.log
+*.pid
+backend.log
+frontend.log
+admin.log
+
+# Node.js dependencies and build
+node_modules/
+.next/
+dist/
+build/
+venv/
+.venv/
+
+# Rust / Cargo build artifacts
+/target/
+**/target/
+Cargo.lock
+
+# Operating System files
+.DS_Store
+Thumbs.db
