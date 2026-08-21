@@ -19,7 +19,7 @@ export function UsersPage() {
   const [selectedPlan, setSelectedPlan] = useState('premium');
 
   const fetchUsers = () => {
-    fetch(`http://localhost:5150/api/admin/users?page=${page}&page_size=${pageSize}`, {
+    fetch(`/api/admin/users?page=${page}&page_size=${pageSize}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => res.json())
@@ -42,7 +42,7 @@ export function UsersPage() {
     if (!blockUser) return;
 
     const endpoint = blockUser.is_blocked ? 'unblock' : 'block';
-    const res = await fetch(`http://localhost:5150/api/admin/users/${blockUser.id}/${endpoint}`, {
+    const res = await fetch(`/api/admin/users/${blockUser.id}/${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ export function UsersPage() {
   const handleGrantPlan = async () => {
     if (!grantUser) return;
 
-    const res = await fetch(`http://localhost:5150/api/admin/users/${grantUser.id}/grant-plan`, {
+    const res = await fetch(`/api/admin/users/${grantUser.id}/grant-plan`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

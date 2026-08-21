@@ -7,7 +7,7 @@ export function ServicesStatsPage() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch('http://localhost:5150/api/admin/stats/services', {
+    fetch('/api/admin/stats/services', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => res.json())

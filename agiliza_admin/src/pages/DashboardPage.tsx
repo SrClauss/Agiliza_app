@@ -8,15 +8,15 @@ export function DashboardPage() {
   const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:5150/api/admin/stats/financial', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/admin/stats/financial', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => setFinStats(data));
 
-    fetch('http://localhost:5150/api/admin/stats/services', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/admin/stats/services', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => setServStats(data));
 
-    fetch('http://localhost:5150/api/admin/users', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => { if (Array.isArray(data)) setUsers(data); });
   }, [token]);

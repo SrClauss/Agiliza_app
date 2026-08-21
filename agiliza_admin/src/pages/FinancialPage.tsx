@@ -6,7 +6,7 @@ export function FinancialPage() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch('http://localhost:5150/api/admin/stats/financial', {
+    fetch('/api/admin/stats/financial', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => res.json())

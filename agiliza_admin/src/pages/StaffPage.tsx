@@ -12,7 +12,7 @@ export function StaffPage() {
   const [generatedInvite, setGeneratedInvite] = useState<{ invite_token: string; invite_url: string } | null>(null);
 
   const fetchStaff = () => {
-    fetch('http://localhost:5150/api/admin/users', {
+    fetch('/api/admin/users', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => res.json())
@@ -29,7 +29,7 @@ export function StaffPage() {
 
   const handleGenerateInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('http://localhost:5150/api/admin/staff/invite', {
+    const res = await fetch('/api/admin/staff/invite', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

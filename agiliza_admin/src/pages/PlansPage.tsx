@@ -15,7 +15,7 @@ export function PlansPage() {
   const [features, setFeatures] = useState('');
 
   const fetchPlans = () => {
-    fetch('http://localhost:5150/api/admin/plans', {
+    fetch('/api/admin/plans', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => res.json())
@@ -32,7 +32,7 @@ export function PlansPage() {
     e.preventDefault();
     const featArray = features.split('\n').filter((f) => f.trim().length > 0);
 
-    const res = await fetch('http://localhost:5150/api/admin/plans', {
+    const res = await fetch('/api/admin/plans', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

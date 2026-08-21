@@ -17,7 +17,7 @@ export function CategoriesPage() {
   const [parentId, setParentId] = useState('');
 
   const fetchCategories = () => {
-    fetch('http://localhost:5150/api/admin/categories', {
+    fetch('/api/admin/categories', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => res.json())
@@ -32,7 +32,7 @@ export function CategoriesPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('http://localhost:5150/api/admin/categories', {
+    const res = await fetch('/api/admin/categories', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
