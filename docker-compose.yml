@@ -1,5 +1,5 @@
 services:
-  # 1. PROXY REVERSO NGINX COM SSL (AGILIZAPRO.NET)
+  # 1. PROXY REVERSO NGINX COM SSL (AGILIZAPRO.NET, APP, ADMIN, API, STORAGE)
   nginx:
     image: nginx:alpine
     container_name: agiliza_proxy
@@ -26,14 +26,14 @@ services:
       - ./certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while true; do certbot renew; sleep 12h & wait $${!}; done;'"
 
-  # 3. BANCO DE DADOS POSTGRESQL 16
+  # 3. BANCO DE DADOS POSTGRESQL 16 PROTEGIDO (ISOLADO NA REDE INTERNA DO SERVIDOR)
   postgresql:
     image: postgres:16-alpine
     container_name: agiliza_postgres
     restart: always
     environment:
       POSTGRES_USER: agiliza
-      POSTGRES_PASSWORD: agilizapassword123
+      POSTGRES_PASSWORD: "e7181ddd-757b-4090-9841-7cca03604ae8"
       POSTGRES_DB: agiliza_db
     expose:
       - "5432"
@@ -45,7 +45,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # 4. CACHE REDIS 7
+  # 4. CACHE REDIS 7 PROTEGIDO (REDE INTERNA)
   redis:
     image: redis:7-alpine
     container_name: agiliza_redis
@@ -68,14 +68,14 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadminpassword123
+      MINIO_ROOT_PASSWORD: "e7181ddd-757b-4090-9841-7cca03604ae8"
     expose:
       - "9000"
       - "9001"
     volumes:
       - minio_data:/data
 
-  # 6. BACKEND RUST (AGILIZA_LOCO)
+  # 6. BACKEND RUST (AGILIZA_LOCO - DEDICADO EM API.AGILIZAPRO.NET)
   agiliza_loco:
     build:
       context: ./agiliza_loco
@@ -88,11 +88,11 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://agiliza:agilizapassword123@postgresql:5432/agiliza_db
+      DATABASE_URL: postgres://agiliza:e7181ddd-757b-4090-9841-7cca03604ae8@postgresql:5432/agiliza_db
       REDIS_URL: redis://redis:6379
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadminpassword123
+      MINIO_SECRET_KEY: "e7181ddd-757b-4090-9841-7cca03604ae8"
       MINIO_BUCKET: agilizapro-media
       PORT: 5150
     expose:
