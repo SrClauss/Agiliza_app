@@ -41,7 +41,7 @@ rsync -avz --delete \
 
 # 5. Subir a infraestrutura Docker na VPS
 echo "🐳 Subindo infraestrutura Docker (Postgres, Redis, MinIO, Nginx, App, Admin, API) na VPS..."
-ssh $VPS_USER@$VPS_IP "cd $REMOTE_DIR && docker compose up -d --build"
+ssh $VPS_USER@$VPS_IP "cd $REMOTE_DIR && docker compose down --remove-orphans && docker compose up -d --build"
 
 echo "=================================================="
 echo "✅ DEPLOY E SYNC GIT CONCLUÍDOS COM SUCESSO!"
