@@ -42,6 +42,7 @@ rsync -avz --delete \
 # 5. Subir a infraestrutura Docker na VPS
 echo "🐳 Subindo infraestrutura Docker (Postgres, Redis, MinIO, Nginx, App, Admin, API) na VPS..."
 ssh $VPS_USER@$VPS_IP "systemctl stop nginx || true"
+ssh $VPS_USER@$VPS_IP "mkdir -p /opt/agilizapro/certbot/conf/live/agilizapro.net && cp -rL /etc/letsencrypt/live/admin.agilizapro.net/* /opt/agilizapro/certbot/conf/live/agilizapro.net/ 2>/dev/null || true"
 ssh $VPS_USER@$VPS_IP "docker rm -f agiliza_redis agiliza_postgres agiliza_minio agiliza_backend agiliza_web agiliza_admin agiliza_proxy agiliza_certbot || true"
 ssh $VPS_USER@$VPS_IP "cd $REMOTE_DIR && docker compose down --remove-orphans && docker compose up -d --build"
 
