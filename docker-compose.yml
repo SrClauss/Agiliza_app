@@ -94,6 +94,8 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: "e7181ddd-757b-4090-9841-7cca03604ae8"
       MINIO_BUCKET: agilizapro-media
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-""}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-""}
       PORT: 5150
     expose:
       - "5150"

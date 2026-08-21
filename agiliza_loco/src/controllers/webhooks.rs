@@ -9,16 +9,36 @@ async fn stripe_payment_update(
     headers: axum::http::HeaderMap,
     body: String,
 ) -> Result<Response> {
-    let webhook_secret = std::env::var("STRIPE_WEBHOOK_SECRET")
-        .map_err(|_| Error::Message("STRIPE_WEBHOOK_SECRET is not set".to_string()))?;
+    let webhook_secret = match std::env::var("STRIPE_WEBHOOK_SECRET") {
+        Ok(secret) if !secret.is_empty() => secret,
+        _ => {
+            tracing::warn!("STRIPE_WEBHOOK_SECRET não configurado nas variáveis de ambiente.");
+            return format::json(serde_json::json!({
+                "status": "warning",
+                "message": "STRIPE_WEBHOOK_SECRET não configurado."
+            }));
+        }
+    };
 
-    let signature = headers
-        .get("Stripe-Signature")
-        .and_then(|v| v.to_str().ok())
-        .ok_or_else(|| Error::Message("Missing Stripe signature".to_string()))?;
+    let signature = match headers.get("Stripe-Signature").and_then(|v| v.to_str().ok()) {
+        Some(sig) => sig,
+        None => {
+            return format::json(serde_json::json!({
+                "status": "error",
+                "message": "Cabeçalho Stripe-Signature ausente."
+            }));
+        }
+    };
 
-    let event = Webhook::construct_event(&body, signature, &webhook_secret)
-        .map_err(|e| Error::Message(format!("Webhook signature verification failed: {:?}", e)))?;
+    let event = match Webhook::construct_event(&body, signature, &webhook_secret) {
+        Ok(ev) => ev,
+        Err(e) => {
+            return format::json(serde_json::json!({
+                "status": "error",
+                "message": format!("Assinatura do Webhook falhou: {:?}", e)
+            }));
+        }
+    };
 
     match event.type_ {
         stripe::EventType::CheckoutSessionCompleted => {
