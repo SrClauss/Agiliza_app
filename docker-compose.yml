@@ -1,44 +1,130 @@
 version: '3.8'
 
 services:
-  # Servidor Backend em Rust (Loco / Axum)
-  backend:
+  # 1. PROXY REVERSO NGINX COM SSL (AGILIZAPRO.NET)
+  nginx:
+    image: nginx:alpine
+    container_name: agiliza_proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - agiliza_web
+      - agiliza_admin
+      - agiliza_loco
+      - minio
+
+  # 2. AUTO SSL LET'S ENCRYPT (CERTBOT)
+  certbot:
+    image: certbot/certbot
+    container_name: agiliza_certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while true; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+  # 3. BANCO DE DADOS POSTGRESQL 16
+  postgresql:
+    image: postgres:16-alpine
+    container_name: agiliza_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: agiliza
+      POSTGRES_PASSWORD: agilizapassword123
+      POSTGRES_DB: agiliza_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agiliza -d agiliza_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 4. CACHE REDIS 7
+  redis:
+    image: redis:7-alpine
+    container_name: agiliza_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 5. OBJECT STORAGE MINIO (S3 COMPATIBLE)
+  minio:
+    image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+    container_name: agiliza_minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  # 6. BACKEND RUST (AGILIZA_LOCO)
+  agiliza_loco:
     build:
       context: ./agiliza_loco
       dockerfile: Dockerfile
     container_name: agiliza_backend
+    restart: always
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://agiliza:agilizapassword123@postgresql:5432/agiliza_db
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadminpassword123
+      MINIO_BUCKET: agilizapro-media
+      PORT: 5150
     ports:
       - "5150:5150"
-    environment:
-      - PORT=5150
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_51U6IkALTtCtvRRHBhqoLSaDjlUQ8oyV4tDzQrHbcqrtawTDRrqKC0G7UdVi5siTIVH5V0RgQ0feUNLWHJK8dcesN00ANxRRrk7}
-      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY:-pk_test_51U6IkALTtCtvRRHBnQdvWLkTvvDBIvxjIJtEgKI8knnEiWrFJQKphvUa4XHJf32ASTOG9K17UZV0I1CXZFyThO1F0016s5Tste}
-      - STRIPE_PRICE_ID_PRO=${STRIPE_PRICE_ID_PRO:-price_1U6TgbLTtCtvRRHBjbPo5XbI}
-      - STRIPE_PRICE_ID_PREMIUM=${STRIPE_PRICE_ID_PREMIUM:-price_1U6TgcLTtCtvRRHBPoFgenQ0}
-    restart: unless-stopped
 
-  # Servidor Frontend em Next.js
-  frontend:
+  # 7. APP WEB NEXT.JS (AGILIZA_WEB)
+  agiliza_web:
     build:
       context: ./agiliza_web
       dockerfile: Dockerfile
-    container_name: agiliza_frontend
+    container_name: agiliza_web
+    restart: always
+    depends_on:
+      - agiliza_loco
+    environment:
+      NEXT_PUBLIC_API_URL: https://api.agilizapro.net
     ports:
       - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5150
-    depends_on:
-      - backend
-    restart: unless-stopped
 
-  # Container do Stripe CLI para rotear webhooks automaticamente para o backend local
-  stripe-cli:
-    image: stripe/stripe-cli:v1.23.0
-    container_name: agiliza_stripe_cli
-    command: >
-      listen
-      --api-key ${STRIPE_SECRET_KEY:-sk_test_51U6IkALTtCtvRRHBhqoLSaDjlUQ8oyV4tDzQrHbcqrtawTDRrqKC0G7UdVi5siTIVH5V0RgQ0feUNLWHJK8dcesN00ANxRRrk7}
-      --forward-to backend:5150/api/billing/webhook
-    depends_on:
-      - backend
-    restart: unless-stopped
+  # 8. PAINEL ADMIN ISOLADO (AGILIZA_ADMIN)
+  agiliza_admin:
+    build:
+      context: ./agiliza_admin
+      dockerfile: Dockerfile
+    container_name: agiliza_admin
+    restart: always
+    ports:
+      - "3001:80"
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
