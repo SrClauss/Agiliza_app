@@ -14,12 +14,10 @@ pub async fn register_token(
     State(ctx): State<AppContext>,
     Json(params): Json<DeviceTokenParams>,
 ) -> Result<Response> {
-    let user_id = auth.claims.pid.parse::<uuid::Uuid>().unwrap(); // pid is UUID
-    let user = crate::models::_entities::users::Entity::find()
-        .filter(crate::models::_entities::users::Column::Id.eq(user_id))
-        .one(&ctx.db)
-        .await?
-        .ok_or_else(|| Error::Unauthorized("User not found".to_string()))?;
+    let user_id = match auth.claims.pid.parse::<uuid::Uuid>() {
+        Ok(uid) => uid,
+        Err(_) => return Err(Error::Unauthorized("Invalid user ID".to_string())),
+    };
 
     let existing = Entity::find()
         .filter(device_tokens::Column::Token.eq(&params.token))
@@ -27,23 +25,24 @@ pub async fn register_token(
         .await?;
 
     if let Some(token) = existing {
-        if token.user_id != user.id {
-            let mut active: ActiveModel = token.into();
-            active.user_id = sea_orm::ActiveValue::Set(user.id);
-            active.update(&ctx.db).await?;
-        }
+        let mut active: ActiveModel = token.into();
+        active.user_id = sea_orm::ActiveValue::Set(user_id);
+        active.is_active = sea_orm::ActiveValue::Set(true);
+        active.update(&ctx.db).await?;
     } else {
         let active = ActiveModel {
-            user_id: sea_orm::ActiveValue::Set(user.id),
+            id: sea_orm::ActiveValue::Set(uuid::Uuid::new_v4()),
+            user_id: sea_orm::ActiveValue::Set(user_id),
             token: sea_orm::ActiveValue::Set(params.token),
             platform: sea_orm::ActiveValue::Set(params.platform),
             is_active: sea_orm::ActiveValue::Set(true),
-            ..Default::default()
+            created_at: sea_orm::ActiveValue::Set(chrono::Utc::now().into()),
+            updated_at: sea_orm::ActiveValue::Set(chrono::Utc::now().into()),
         };
         active.insert(&ctx.db).await?;
     }
 
-    format::empty()
+    format::json(serde_json::json!({ "status": "registered" }))
 }
 
 pub fn routes() -> Routes {

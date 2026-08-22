@@ -160,7 +160,12 @@ async fn handle_socket(
                         created_at: Set(now),
                     };
 
-                    let _ = active_msg.insert(&ctx_clone.db).await;
+                    // Salvar no banco com garantia e logs
+                    if let Err(err) = active_msg.insert(&ctx_clone.db).await {
+                        tracing::error!("[Chat DB Error] Falha ao persistir mensagem {}: {:?}", msg_id, err);
+                    } else {
+                        tracing::info!("[Chat DB] Mensagem {} persistida com sucesso para o pedido {}", msg_id, request_id);
+                    }
 
                     // Buscar nome do usuário
                     let sender_name = match users::Entity::find_by_id(user_id).one(&ctx_clone.db).await {
@@ -178,7 +183,37 @@ async fn handle_socket(
                     };
 
                     // Broadcast para todos conectados na sala
-                    let _ = tx.send(ws_msg);
+                    let _ = tx.send(ws_msg.clone());
+
+                    // Disparar Web Push para o destinatário (aba fechada)
+                    let db_clone = ctx_clone.db.clone();
+                    let s_name = ws_msg.sender_name.clone();
+                    let c_text = ws_msg.content.clone();
+                    tokio::spawn(async move {
+                        if let Ok(Some(req)) = crate::models::_entities::service_requests::Entity::find_by_id(request_id).one(&db_clone).await {
+                            let mut target_uid = None;
+
+                            if req.client_id == user_id {
+                                if let Some(prof_profile_id) = req.professional_profile_id {
+                                    if let Ok(Some(prof)) = crate::models::_entities::professional_profiles::Entity::find_by_id(prof_profile_id).one(&db_clone).await {
+                                        target_uid = Some(prof.user_id);
+                                    }
+                                }
+                            } else {
+                                target_uid = Some(req.client_id);
+                            }
+
+                            if let Some(recipient_id) = target_uid {
+                                crate::services::push::send_web_push(
+                                    &db_clone,
+                                    recipient_id,
+                                    &format!("💬 Nova mensagem de {}", s_name),
+                                    &c_text,
+                                    &format!("/chat/{}", request_id)
+                                ).await;
+                            }
+                        }
+                    });
                 }
             }
         }
