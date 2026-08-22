@@ -149,7 +149,7 @@ async fn handle_socket(
                     }
 
                     let msg_id = uuid::Uuid::new_v4();
-                    let now = chrono::Utc::now().naive_utc();
+                    let now: sea_orm::prelude::DateTimeWithTimeZone = chrono::Utc::now().into();
 
                     // Salvar no banco
                     let active_msg = chat_messages::ActiveModel {
@@ -179,7 +179,7 @@ async fn handle_socket(
                         sender_id: user_id,
                         sender_name,
                         content: incoming.content,
-                        created_at: now.to_string(),
+                        created_at: now.to_rfc3339(),
                     };
 
                     // Broadcast para todos conectados na sala
