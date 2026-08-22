@@ -97,9 +97,10 @@ pub async fn ws_handler(
     let mut user_id = uuid::Uuid::nil();
 
     if let Some(token) = &query.token {
+        let clean_token = token.trim_start_matches("Bearer ").trim();
         if let Some(auth_config) = &ctx.config.auth {
             if let Some(jwt_config) = &auth_config.jwt {
-                if let Ok(claims) = loco_rs::auth::jwt::JWT::new(&jwt_config.secret).validate(token) {
+                if let Ok(claims) = loco_rs::auth::jwt::JWT::new(&jwt_config.secret).validate(clean_token) {
                     if let Ok(uid) = uuid::Uuid::parse_str(&claims.claims.pid) {
                         user_id = uid;
                     }
@@ -107,6 +108,8 @@ pub async fn ws_handler(
             }
         }
     }
+
+    tracing::info!("[WebSocket] Upgrade iniciado para a sala {} pelo usuário {}", request_id, user_id);
 
     ws.on_upgrade(move |socket| handle_socket(socket, request_id, user_id, ctx))
 }
