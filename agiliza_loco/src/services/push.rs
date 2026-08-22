@@ -14,10 +14,14 @@ pub async fn send_web_push(db: &DatabaseConnection, user_id: uuid::Uuid, title: 
         .await
     {
         Ok(t) => t,
-        Err(_) => return,
+        Err(e) => {
+            tracing::error!("[WebPush Error] Erro ao buscar tokens do usuario {}: {:?}", user_id, e);
+            return;
+        }
     };
 
     if tokens.is_empty() {
+        tracing::warn!("[WebPush] Nenhum device_token ativo encontrado para o usuario {}", user_id);
         return;
     }
 
@@ -29,7 +33,10 @@ pub async fn send_web_push(db: &DatabaseConnection, user_id: uuid::Uuid, title: 
 
     let client = match IsahcWebPushClient::new() {
         Ok(c) => c,
-        Err(_) => return,
+        Err(e) => {
+            tracing::error!("[WebPush Error] Falha ao instanciar IsahcWebPushClient: {:?}", e);
+            return;
+        }
     };
 
     for t in tokens {
@@ -37,16 +44,24 @@ pub async fn send_web_push(db: &DatabaseConnection, user_id: uuid::Uuid, title: 
             let mut builder = WebPushMessageBuilder::new(&sub_info);
             builder.set_payload(ContentEncoding::Aes128Gcm, payload.as_bytes());
 
-            if let Ok(sig_builder) = VapidSignatureBuilder::from_base64(
+            match VapidSignatureBuilder::from_base64(
                 VAPID_PRIVATE_KEY,
                 URL_SAFE_NO_PAD,
                 &sub_info,
             ) {
-                if let Ok(sig) = sig_builder.build() {
-                    builder.set_vapid_signature(sig);
-                    if let Ok(message) = builder.build() {
-                        let _ = client.send(message).await;
+                Ok(sig_builder) => {
+                    if let Ok(sig) = sig_builder.build() {
+                        builder.set_vapid_signature(sig);
+                        if let Ok(message) = builder.build() {
+                            match client.send(message).await {
+                                Ok(_) => tracing::info!("[WebPush Success] Notificacao push enviada com sucesso para usuario {}", user_id),
+                                Err(err) => tracing::error!("[WebPush Error] Erro ao despachar notificacao via FCM/WebPush: {:?}", err),
+                            }
+                        }
                     }
+                }
+                Err(err) => {
+                    tracing::error!("[WebPush Error] Erro ao assinar VAPID: {:?}", err);
                 }
             }
         }
