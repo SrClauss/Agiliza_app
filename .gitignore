@@ -29,6 +29,7 @@ venv/
 **/target/
 Cargo.lock
 
-# Operating System files
+# Operating System & SSL files
 .DS_Store
 Thumbs.db
+certbot/

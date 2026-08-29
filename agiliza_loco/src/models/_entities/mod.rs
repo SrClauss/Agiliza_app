@@ -2,9 +2,11 @@
 
 pub mod prelude;
 
+pub mod advertisements;
 pub mod availability_slots;
 pub mod device_tokens;
 pub mod favorites;
+pub mod featured_professionals;
 pub mod portfolio_items;
 pub mod professional_profile_categories;
 pub mod professional_profiles;

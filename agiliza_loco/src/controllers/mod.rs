@@ -13,3 +13,4 @@ pub mod service_requests;
 pub mod webhooks;
 pub mod chat;
 pub mod admin;
+pub mod advertisements;

@@ -22,6 +22,10 @@ mod m20260820_182128_create_subscription_plans;
 mod m20260820_182235_add_parent_id_to_service_categories;
 mod m20260820_182323_add_block_fields_to_users;
 mod m20260820_203357_add_cpf_to_users;
+mod m20260829_000001_create_advertisements;
+mod m20260829_000002_create_featured_professionals;
+mod m20260829_023700_add_recipient_id_to_chat_messages;
+
 pub struct Migrator;
 
 #[async_trait::async_trait]
@@ -47,6 +51,9 @@ impl MigratorTrait for Migrator {
             Box::new(m20260820_182235_add_parent_id_to_service_categories::Migration),
             Box::new(m20260820_182323_add_block_fields_to_users::Migration),
             Box::new(m20260820_203357_add_cpf_to_users::Migration),
+            Box::new(m20260829_000001_create_advertisements::Migration),
+            Box::new(m20260829_000002_create_featured_professionals::Migration),
+            Box::new(m20260829_023700_add_recipient_id_to_chat_messages::Migration),
         ]
     }
 }

@@ -9,20 +9,19 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(ChatMessages::Table)
+                    .table(FeaturedProfessionals::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(ChatMessages::Id)
+                        ColumnDef::new(FeaturedProfessionals::Id)
                             .uuid()
                             .not_null()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(ChatMessages::ServiceRequestId).uuid().null())
-                    .col(ColumnDef::new(ChatMessages::SenderId).uuid().not_null())
-                    .col(ColumnDef::new(ChatMessages::RecipientId).uuid().null())
-                    .col(ColumnDef::new(ChatMessages::Content).text().not_null())
+                    .col(ColumnDef::new(FeaturedProfessionals::ProfessionalProfileId).uuid().not_null())
+                    .col(ColumnDef::new(FeaturedProfessionals::UserId).uuid().not_null())
+                    .col(ColumnDef::new(FeaturedProfessionals::FeaturedDate).date().not_null())
                     .col(
-                        ColumnDef::new(ChatMessages::CreatedAt)
+                        ColumnDef::new(FeaturedProfessionals::CreatedAt)
                             .date_time()
                             .not_null()
                             .default(Expr::current_timestamp()),
@@ -34,18 +33,17 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
-            .drop_table(Table::drop().table(ChatMessages::Table).to_owned())
+            .drop_table(Table::drop().table(FeaturedProfessionals::Table).to_owned())
             .await
     }
 }
 
 #[derive(DeriveIden)]
-enum ChatMessages {
+enum FeaturedProfessionals {
     Table,
     Id,
-    ServiceRequestId,
-    SenderId,
-    RecipientId,
-    Content,
+    ProfessionalProfileId,
+    UserId,
+    FeaturedDate,
     CreatedAt,
 }

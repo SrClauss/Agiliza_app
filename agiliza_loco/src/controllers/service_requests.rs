@@ -59,7 +59,9 @@ async fn list_service_requests(
     State(ctx): State<AppContext>,
     Query(query): Query<RequestQueryParams>,
 ) -> Result<Response> {
-    let user = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await?;
+    let Ok(user) = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await else {
+        return unauthorized("Invalid or expired token!");
+    };
     let mut db_query = service_requests::Entity::find()
         .order_by_desc(service_requests::Column::CreatedAt);
 
@@ -82,7 +84,7 @@ async fn list_service_requests(
                     .add(
                         sea_orm::Condition::all()
                             .add(service_requests::Column::ProfessionalProfileId.is_null())
-                            .add(service_requests::Column::Status.eq("PENDING")),
+                            .add(service_requests::Column::Status.is_in(vec!["OPEN".to_string(), "PENDING".to_string()])),
                     ),
             )
             .all(&ctx.db)
@@ -162,7 +164,9 @@ async fn create_service_request(
     State(ctx): State<AppContext>,
     Json(params): Json<CreateServiceRequestParams>,
 ) -> Result<Response> {
-    let user = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await?;
+    let Ok(user) = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await else {
+        return unauthorized("Invalid or expired token!");
+    };
 
     let req = service_requests::ActiveModel {
         client_id: Set(user.id),
@@ -189,7 +193,9 @@ async fn get_service_request(
     State(ctx): State<AppContext>,
     Path(id): Path<uuid::Uuid>,
 ) -> Result<Response> {
-    let user = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await?;
+    let Ok(user) = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await else {
+        return unauthorized("Invalid or expired token!");
+    };
     let req = service_requests::Entity::find_by_id(id).one(&ctx.db).await?;
 
     let Some(r) = req else {
@@ -259,7 +265,9 @@ async fn unlock_contact(
     State(ctx): State<AppContext>,
     Path(id): Path<uuid::Uuid>,
 ) -> Result<Response> {
-    let user = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await?;
+    let Ok(user) = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await else {
+        return unauthorized("Invalid or expired token!");
+    };
     let req = service_requests::Entity::find_by_id(id).one(&ctx.db).await?;
 
     let Some(r) = req else {
@@ -331,7 +339,9 @@ async fn update_status(
     Path(id): Path<uuid::Uuid>,
     Json(params): Json<UpdateStatusParams>,
 ) -> Result<Response> {
-    let user = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await?;
+    let Ok(user) = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await else {
+        return unauthorized("Invalid or expired token!");
+    };
     let req = service_requests::Entity::find_by_id(id).one(&ctx.db).await?;
 
     let Some(req) = req else {
@@ -353,7 +363,9 @@ async fn update_status(
 
 #[debug_handler]
 async fn dashboard(auth: auth::JWT, State(ctx): State<AppContext>) -> Result<Response> {
-    let user = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await?;
+    let Ok(user) = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await else {
+        return unauthorized("Invalid or expired token!");
+    };
     let prof = professional_profiles::Entity::find()
         .filter(professional_profiles::Column::UserId.eq(user.id))
         .one(&ctx.db)

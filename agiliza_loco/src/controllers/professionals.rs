@@ -1,9 +1,8 @@
 use crate::models::{
-    _entities::{professional_profiles, users},
-    professional_profiles::Model as ProfModel,
+    _entities::{professional_profiles, users, featured_professionals, reviews},
 };
 use loco_rs::prelude::*;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, PaginatorTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, PaginatorTrait, Set};
 use serde::{Deserialize, Serialize};
 use chrono::Datelike;
 
@@ -38,6 +37,16 @@ pub struct ProfessionalDto {
     pub subscription_status: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct UpdateProfessionalDto {
+    pub full_name: Option<String>,
+    pub bio: Option<String>,
+    pub years_experience: Option<i32>,
+    pub hourly_rate: Option<rust_decimal::Decimal>,
+    pub service_radius_km: Option<i32>,
+    pub address: Option<String>,
+}
+
 #[debug_handler]
 async fn list_professionals(
     _auth: auth::JWT,
@@ -45,7 +54,12 @@ async fn list_professionals(
     Query(query): Query<SearchQueryParams>,
 ) -> Result<Response> {
     let mut db_query = professional_profiles::Entity::find()
-        .filter(professional_profiles::Column::SubscriptionStatus.is_in(vec!["active".to_string(), "trialing".to_string()]))
+        .filter(professional_profiles::Column::SubscriptionStatus.is_in(vec![
+            "ACTIVE".to_string(),
+            "active".to_string(),
+            "TRIALING".to_string(),
+            "trialing".to_string(),
+        ]))
         .order_by_desc(professional_profiles::Column::AverageRating)
         .order_by_desc(professional_profiles::Column::TotalReviews);
 
@@ -59,94 +73,270 @@ async fn list_professionals(
     let profiles = db_query.all(&ctx.db).await?;
     let mut results = Vec::new();
 
-    let search_lat = query.latitude.or(query.lat);
-    let search_lng = query.longitude.or(query.lng).or(query.lon);
-
     for p in profiles {
-        let user = users::Entity::find_by_id(p.user_id)
-            .one(&ctx.db)
-            .await?
-            .ok_or_else(|| ModelError::EntityNotFound)?;
-
-        if let (Some(lat), Some(lng), Some(radius)) = (search_lat, search_lng, query.radius_km) {
-            if let (Some(plat), Some(plng)) = (p.latitude, p.longitude) {
-                use rust_decimal::prelude::ToPrimitive;
-                let plat_f64 = plat.to_f64().unwrap_or(0.0);
-                let plng_f64 = plng.to_f64().unwrap_or(0.0);
-                let dist = ProfModel::distance_km(lat, lng, plat_f64, plng_f64);
-                if dist > radius {
-                    continue;
-                }
-            } else {
-                continue;
-            }
+        if let Some(u) = users::Entity::find().filter(users::Column::Id.eq(p.user_id)).one(&ctx.db).await? {
+            results.push(ProfessionalDto {
+                id: p.id,
+                user_id: p.user_id,
+                email: u.email,
+                full_name: u.name,
+                bio: p.bio,
+                years_experience: p.years_experience,
+                hourly_rate: p.hourly_rate,
+                service_radius_km: p.service_radius_km,
+                address: p.address,
+                latitude: p.latitude,
+                longitude: p.longitude,
+                average_rating: p.average_rating,
+                total_reviews: p.total_reviews,
+                subscription_status: p.subscription_status,
+            });
         }
-
-        results.push(ProfessionalDto {
-            id: p.id,
-            user_id: user.id,
-            email: user.email,
-            full_name: user.name,
-            bio: p.bio,
-            years_experience: p.years_experience,
-            hourly_rate: p.hourly_rate,
-            service_radius_km: p.service_radius_km,
-            address: p.address,
-            latitude: p.latitude,
-            longitude: p.longitude,
-            average_rating: p.average_rating,
-            total_reviews: p.total_reviews,
-            subscription_status: p.subscription_status,
-        });
     }
 
     format::json(results)
 }
 
 #[debug_handler]
-async fn me(auth: auth::JWT, State(ctx): State<AppContext>) -> Result<Response> {
-    let user = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await?;
-    if user.role.as_deref() != Some("PROFESSIONAL") {
-        return unauthorized("Only professional users may access this endpoint.");
-    }
-
-    let prof = professional_profiles::Entity::find()
-        .filter(professional_profiles::Column::UserId.eq(user.id))
-        .one(&ctx.db)
+async fn list_featured_professionals(
+    _auth: auth::JWT,
+    State(ctx): State<AppContext>,
+) -> Result<Response> {
+    let featured_items = featured_professionals::Entity::find()
+        .order_by_desc(featured_professionals::Column::CreatedAt)
+        .limit(6)
+        .all(&ctx.db)
         .await?;
 
-    match prof {
-        Some(p) => format::json(ProfessionalDto {
-            id: p.id,
-            user_id: user.id,
-            email: user.email,
-            full_name: user.name,
-            bio: p.bio,
-            years_experience: p.years_experience,
-            hourly_rate: p.hourly_rate,
-            service_radius_km: p.service_radius_km,
-            address: p.address,
-            latitude: p.latitude,
-            longitude: p.longitude,
-            average_rating: p.average_rating,
-            total_reviews: p.total_reviews,
-            subscription_status: p.subscription_status,
-        }),
-        None => not_found(),
+    let mut results = Vec::new();
+
+    for feat in featured_items {
+        let p_opt = professional_profiles::Entity::find()
+            .filter(professional_profiles::Column::Id.eq(feat.professional_profile_id))
+            .one(&ctx.db)
+            .await?;
+
+        let u_opt = users::Entity::find()
+            .filter(users::Column::Id.eq(feat.user_id))
+            .one(&ctx.db)
+            .await?;
+
+        if let (Some(p), Some(u)) = (p_opt, u_opt) {
+            results.push(ProfessionalDto {
+                id: p.id,
+                user_id: u.id,
+                email: u.email,
+                full_name: u.name,
+                bio: p.bio,
+                years_experience: p.years_experience,
+                hourly_rate: p.hourly_rate,
+                service_radius_km: p.service_radius_km,
+                address: p.address,
+                latitude: p.latitude,
+                longitude: p.longitude,
+                average_rating: p.average_rating,
+                total_reviews: p.total_reviews,
+                subscription_status: p.subscription_status,
+            });
+        }
     }
+
+    if results.is_empty() {
+        let profiles = professional_profiles::Entity::find()
+            .filter(professional_profiles::Column::SubscriptionStatus.is_in(vec![
+                "ACTIVE".to_string(), "active".to_string(), "TRIALING".to_string(), "trialing".to_string()
+            ]))
+            .order_by_desc(professional_profiles::Column::AverageRating)
+            .order_by_desc(professional_profiles::Column::TotalReviews)
+            .limit(6)
+            .all(&ctx.db)
+            .await?;
+
+        for p in profiles {
+            if let Some(u) = users::Entity::find().filter(users::Column::Id.eq(p.user_id)).one(&ctx.db).await? {
+                results.push(ProfessionalDto {
+                    id: p.id,
+                    user_id: u.id,
+                    email: u.email,
+                    full_name: u.name,
+                    bio: p.bio,
+                    years_experience: p.years_experience,
+                    hourly_rate: p.hourly_rate,
+                    service_radius_km: p.service_radius_km,
+                    address: p.address,
+                    latitude: p.latitude,
+                    longitude: p.longitude,
+                    average_rating: p.average_rating,
+                    total_reviews: p.total_reviews,
+                    subscription_status: p.subscription_status,
+                });
+            }
+        }
+    }
+
+    format::json(results)
 }
 
 #[debug_handler]
-async fn get_limits(auth: auth::JWT, State(ctx): State<AppContext>) -> Result<Response> {
-    let user = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await?;
-    let prof = professional_profiles::Entity::find()
-        .filter(professional_profiles::Column::UserId.eq(user.id))
+async fn me(
+    auth: auth::JWT,
+    State(ctx): State<AppContext>,
+) -> Result<Response> {
+    let user_id = uuid::Uuid::parse_str(&auth.claims.pid).map_err(|e| Error::BadRequest(e.to_string()))?;
+
+    let p = professional_profiles::Entity::find()
+        .filter(professional_profiles::Column::UserId.eq(user_id))
         .one(&ctx.db)
+        .await?
+        .ok_or_else(|| Error::NotFound)?;
+
+    let u = users::Entity::find()
+        .filter(users::Column::Id.eq(user_id))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| Error::NotFound)?;
+
+    format::json(ProfessionalDto {
+        id: p.id,
+        user_id: p.user_id,
+        email: u.email,
+        full_name: u.name,
+        bio: p.bio,
+        years_experience: p.years_experience,
+        hourly_rate: p.hourly_rate,
+        service_radius_km: p.service_radius_km,
+        address: p.address,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        average_rating: p.average_rating,
+        total_reviews: p.total_reviews,
+        subscription_status: p.subscription_status,
+    })
+}
+
+#[debug_handler]
+async fn update_me(
+    auth: auth::JWT,
+    State(ctx): State<AppContext>,
+    Json(params): Json<UpdateProfessionalDto>,
+) -> Result<Response> {
+    let user_id = uuid::Uuid::parse_str(&auth.claims.pid).map_err(|e| Error::BadRequest(e.to_string()))?;
+    let now: sea_orm::prelude::DateTimeWithTimeZone = chrono::Utc::now().into();
+
+    let p = professional_profiles::Entity::find()
+        .filter(professional_profiles::Column::UserId.eq(user_id))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| Error::NotFound)?;
+
+    let u = users::Entity::find()
+        .filter(users::Column::Id.eq(user_id))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| Error::NotFound)?;
+
+    if let Some(name) = params.full_name {
+        let mut active_u: users::ActiveModel = u.clone().into();
+        active_u.name = Set(name);
+        active_u.updated_at = Set(now);
+        active_u.update(&ctx.db).await?;
+    }
+
+    let mut active_p: professional_profiles::ActiveModel = p.clone().into();
+    if let Some(bio) = params.bio {
+        active_p.bio = Set(Some(bio));
+    }
+    if let Some(exp) = params.years_experience {
+        active_p.years_experience = Set(exp);
+    }
+    if let Some(rate) = params.hourly_rate {
+        active_p.hourly_rate = Set(rate);
+    }
+    if let Some(radius) = params.service_radius_km {
+        active_p.service_radius_km = Set(radius);
+    }
+    if let Some(addr) = params.address {
+        active_p.address = Set(Some(addr));
+    }
+    active_p.updated_at = Set(now);
+    let updated_p = active_p.update(&ctx.db).await?;
+
+    let updated_u = users::Entity::find()
+        .filter(users::Column::Id.eq(user_id))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| Error::NotFound)?;
+
+    format::json(ProfessionalDto {
+        id: updated_p.id,
+        user_id: updated_p.user_id,
+        email: updated_u.email,
+        full_name: updated_u.name,
+        bio: updated_p.bio,
+        years_experience: updated_p.years_experience,
+        hourly_rate: updated_p.hourly_rate,
+        service_radius_km: updated_p.service_radius_km,
+        address: updated_p.address,
+        latitude: updated_p.latitude,
+        longitude: updated_p.longitude,
+        average_rating: updated_p.average_rating,
+        total_reviews: updated_p.total_reviews,
+        subscription_status: updated_p.subscription_status,
+    })
+}
+
+#[debug_handler]
+async fn my_reviews(
+    auth: auth::JWT,
+    State(ctx): State<AppContext>,
+) -> Result<Response> {
+    let user_id = uuid::Uuid::parse_str(&auth.claims.pid).map_err(|e| Error::BadRequest(e.to_string()))?;
+
+    let p = professional_profiles::Entity::find()
+        .filter(professional_profiles::Column::UserId.eq(user_id))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| Error::NotFound)?;
+
+    let r_list = reviews::Entity::find()
+        .filter(reviews::Column::ProfessionalProfileId.eq(p.id))
+        .order_by_desc(reviews::Column::CreatedAt)
+        .all(&ctx.db)
         .await?;
 
-    let Some(p) = prof else {
-        return unauthorized("Only professionals have limits.");
-    };
+    let mut results = Vec::new();
+
+    for r in r_list {
+        let client_name = if let Some(u) = users::Entity::find().filter(users::Column::Id.eq(r.client_id)).one(&ctx.db).await? {
+            u.name
+        } else {
+            "Cliente Agiliza".to_string()
+        };
+
+        results.push(serde_json::json!({
+            "id": r.id,
+            "client_name": client_name,
+            "rating": r.rating,
+            "comment": r.comment,
+            "created_at": r.created_at
+        }));
+    }
+
+    format::json(results)
+}
+
+#[debug_handler]
+async fn get_limits(
+    auth: auth::JWT,
+    State(ctx): State<AppContext>,
+) -> Result<Response> {
+    let user_id = uuid::Uuid::parse_str(&auth.claims.pid).map_err(|e| Error::BadRequest(e.to_string()))?;
+
+    let p = professional_profiles::Entity::find()
+        .filter(professional_profiles::Column::UserId.eq(user_id))
+        .one(&ctx.db)
+        .await?
+        .ok_or_else(|| Error::NotFound)?;
 
     let plan = crate::models::_entities::subscription_plans::Entity::find_by_id(&p.subscription_plan)
         .one(&ctx.db)
@@ -160,7 +350,6 @@ async fn get_limits(auth: auth::JWT, State(ctx): State<AppContext>) -> Result<Re
         .unwrap()
         .and_utc();
 
-    use sea_orm::QuerySelect;
     let count = crate::models::_entities::unlocked_contacts::Entity::find()
         .filter(crate::models::_entities::unlocked_contacts::Column::ProfessionalProfileId.eq(p.id))
         .filter(crate::models::_entities::unlocked_contacts::Column::CreatedAt.gte(start_of_month))
@@ -180,6 +369,8 @@ pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api/auth/professionals")
         .add("/", get(list_professionals))
-        .add("/me", get(me))
+        .add("/featured", get(list_featured_professionals))
+        .add("/me", get(me).put(update_me))
+        .add("/me/reviews", get(my_reviews))
         .add("/me/limits", get(get_limits))
 }
