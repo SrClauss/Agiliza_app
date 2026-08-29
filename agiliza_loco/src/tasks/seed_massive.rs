@@ -4,7 +4,7 @@ use uuid::Uuid;
 use rust_decimal::Decimal;
 use chrono::{Utc, Duration};
 use crate::models::_entities::{
-    users, professional_profiles, service_requests, reviews
+    users, professional_profiles, service_requests, reviews, advertisements
 };
 use crate::tasks::recalculate_featured::RecalculateFeatured;
 
@@ -20,10 +20,18 @@ impl Task for SeedMassive {
     }
 
     async fn run(&self, ctx: &AppContext, _vars: &task::Vars) -> Result<()> {
+        Self::run_seed(ctx).await
+    }
+}
+
+impl SeedMassive {
+    pub async fn run_seed(ctx: &AppContext) -> Result<()> {
+        let _vars = task::Vars::default();
+        let now: sea_orm::prelude::DateTimeWithTimeZone = Utc::now().into();
+
         println!("🚀 Iniciando Seed Massivo (50 Profissionais, 500 Clientes, 1000 Serviços + Avaliações)...");
 
         let password_hash = hash::hash_password("123456")?;
-        let now: sea_orm::prelude::DateTimeWithTimeZone = Utc::now().into();
 
         // Nomes para geração de profissionais e clientes
         let first_names = vec![
@@ -262,7 +270,76 @@ impl Task for SeedMassive {
         }
 
         // 5. Executar o cálculo estatístico dos profissionais em destaque do dia
-        RecalculateFeatured.run(ctx, _vars).await?;
+        RecalculateFeatured.run(&ctx, &_vars).await?;
+
+        // 6. Criar Banners de Propaganda (Advertisements)
+        println!("📢 Gerando Banners de Propaganda no Seed...");
+        let ads_count = advertisements::Entity::find().count(&ctx.db).await?;
+        if ads_count == 0 {
+            let in_30_days = Utc::now() + Duration::days(30);
+
+            let ads_data = vec![
+                (
+                    "EXTERNAL_LINK",
+                    "Desconto de 20% em Serviços Elétricos",
+                    Some("Parceiros verificados com atendimento emergencial 24 horas"),
+                    "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80",
+                    Some("https://agilizapro.net"),
+                    10,
+                ),
+                (
+                    "EXTERNAL_LINK",
+                    "Renove sua Casa com Pintores Profissionais",
+                    Some("Orçamento gratuito e parcelamento em até 12x sem juros"),
+                    "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80",
+                    Some("https://agilizapro.net"),
+                    8,
+                ),
+                (
+                    "EXTERNAL_LINK",
+                    "Solução Rápida para Vazamentos & Infiltrações",
+                    Some("Encanadores credenciados com garantia de serviço"),
+                    "https://images.unsplash.com/photo-1505798577917-a65157d3320a?auto=format&fit=crop&w=800&q=80",
+                    Some("https://agilizapro.net"),
+                    6,
+                ),
+                (
+                    "EXTERNAL_LINK",
+                    "Higienização e Limpeza Profissional Pós-Obra",
+                    Some("Equipe especializada com produtos ecológicos e rapidez"),
+                    "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80",
+                    Some("https://agilizapro.net"),
+                    5,
+                ),
+                (
+                    "PROFESSIONAL_DIRECT",
+                    "Marcos Oliveira - Eletricista Destaque",
+                    Some("Mais de 115 avaliações 5 estrelas e selo de qualidade AgilizaPro"),
+                    "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80",
+                    None,
+                    12,
+                ),
+            ];
+
+            for (ad_type, title, subtitle, img, target, priority) in ads_data {
+                let ad = advertisements::ActiveModel {
+                    id: Set(Uuid::new_v4()),
+                    ad_type: Set(ad_type.to_string()),
+                    title: Set(title.to_string()),
+                    subtitle: Set(subtitle.map(|s| s.to_string())),
+                    banner_image_url: Set(img.to_string()),
+                    target_url: Set(target.map(|t| t.to_string())),
+                    professional_user_id: Set(None),
+                    category_id: Set(None),
+                    status: Set("ACTIVE".to_string()),
+                    priority: Set(priority),
+                    expires_at: Set(Some(in_30_days.into())),
+                    created_at: Set(now),
+                };
+                let _ = ad.insert(&ctx.db).await;
+            }
+            println!("✅ Banners de Propaganda criados com sucesso!");
+        }
 
         println!("🎉 Seed Massivo + Avaliações concluído com sucesso!");
         Ok(())

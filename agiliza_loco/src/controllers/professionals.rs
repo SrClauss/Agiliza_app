@@ -99,7 +99,6 @@ async fn list_professionals(
 
 #[debug_handler]
 async fn list_featured_professionals(
-    _auth: auth::JWT,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     let featured_items = featured_professionals::Entity::find()
