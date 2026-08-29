@@ -26,10 +26,10 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Advertisements::CategoryId).string().null())
                     .col(ColumnDef::new(Advertisements::Status).string().not_null())
                     .col(ColumnDef::new(Advertisements::Priority).integer().not_null().default(0))
-                    .col(ColumnDef::new(Advertisements::ExpiresAt).date_time().null())
+                    .col(ColumnDef::new(Advertisements::ExpiresAt).timestamp_with_time_zone().null())
                     .col(
                         ColumnDef::new(Advertisements::CreatedAt)
-                            .date_time()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )

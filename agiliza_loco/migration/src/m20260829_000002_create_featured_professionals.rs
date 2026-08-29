@@ -22,7 +22,7 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(FeaturedProfessionals::FeaturedDate).date().not_null())
                     .col(
                         ColumnDef::new(FeaturedProfessionals::CreatedAt)
-                            .date_time()
+                            .timestamp_with_time_zone()
                             .not_null()
                             .default(Expr::current_timestamp()),
                     )
