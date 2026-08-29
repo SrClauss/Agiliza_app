@@ -9,6 +9,17 @@ use chrono::Datelike;
 #[derive(Debug, Deserialize)]
 pub struct RequestQueryParams {
     pub status: Option<String>,
+    pub page: Option<u64>,
+    pub per_page: Option<u64>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PaginatedServiceRequestsDto {
+    pub items: Vec<ServiceRequestDto>,
+    pub total_items: u64,
+    pub total_pages: u64,
+    pub page: u64,
+    pub per_page: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -65,7 +76,7 @@ async fn list_service_requests(
     let mut db_query = service_requests::Entity::find()
         .order_by_desc(service_requests::Column::CreatedAt);
 
-    if let Some(status) = query.status {
+    if let Some(status) = &query.status {
         db_query = db_query.filter(service_requests::Column::Status.eq(status));
     }
 
@@ -74,8 +85,8 @@ async fn list_service_requests(
         .one(&ctx.db)
         .await?;
 
-    let requests = if user.is_staff.unwrap_or(false) {
-        db_query.all(&ctx.db).await?
+    let filtered_query = if user.is_staff.unwrap_or(false) {
+        db_query
     } else if let Some(prof) = &prof {
         db_query
             .filter(
@@ -87,14 +98,19 @@ async fn list_service_requests(
                             .add(service_requests::Column::Status.is_in(vec!["OPEN".to_string(), "PENDING".to_string()])),
                     ),
             )
-            .all(&ctx.db)
-            .await?
     } else {
         db_query
             .filter(service_requests::Column::ClientId.eq(user.id))
-            .all(&ctx.db)
-            .await?
     };
+
+    let is_paginated = query.page.is_some() || query.per_page.is_some();
+    let page_num = query.page.unwrap_or(1).max(1);
+    let per_page_num = query.per_page.unwrap_or(10).min(10).max(1);
+
+    let paginator = filtered_query.paginate(&ctx.db, per_page_num);
+    let total_items = paginator.num_items().await?;
+    let total_pages = paginator.num_pages().await?;
+    let requests = paginator.fetch_page(page_num - 1).await?;
 
     let mut dtos = Vec::new();
     for req in requests {
@@ -155,7 +171,17 @@ async fn list_service_requests(
         dtos.push(dto);
     }
 
-    format::json(dtos)
+    if is_paginated {
+        format::json(PaginatedServiceRequestsDto {
+            items: dtos,
+            total_items,
+            total_pages,
+            page: page_num,
+            per_page: per_page_num,
+        })
+    } else {
+        format::json(dtos)
+    }
 }
 
 #[debug_handler]

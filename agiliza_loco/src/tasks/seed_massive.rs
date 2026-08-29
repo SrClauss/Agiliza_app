@@ -236,11 +236,10 @@ impl Task for SeedMassive {
                 let (cat_id, _, _) = specialties[r % specialties.len()];
                 let title = titles[r % titles.len()];
 
-                let status = match r % 4 {
-                    0 => "COMPLETED",
-                    1 => "ACCEPTED",
-                    2 => "OPEN",
-                    _ => "CANCELLED",
+                let status = if r <= 19 {
+                    "OPEN"
+                } else {
+                    "COMPLETED"
                 };
 
                 let req = service_requests::ActiveModel {
