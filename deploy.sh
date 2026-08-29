@@ -37,6 +37,7 @@ rsync -avz --delete \
   --exclude 'target/debug' \
   --exclude 'venv' \
   --exclude '.venv' \
+  --exclude 'certbot' \
   ./ $VPS_USER@$VPS_IP:$REMOTE_DIR/
 
 # 5. Subir a infraestrutura Docker na VPS
