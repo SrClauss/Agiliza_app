@@ -7,10 +7,11 @@ pub use super::_entities::service_requests::{self, ActiveModel, Entity, Model};
 impl Model {
     pub fn can_transition_to(&self, new_status: &str) -> bool {
         match self.status.as_str() {
-            "PENDING" => matches!(new_status, "QUOTED" | "ACCEPTED" | "CANCELLED"),
-            "QUOTED" => matches!(new_status, "ACCEPTED" | "CANCELLED"),
-            "ACCEPTED" => matches!(new_status, "SCHEDULED" | "CANCELLED"),
-            "SCHEDULED" => matches!(new_status, "COMPLETED" | "CANCELLED"),
+            "PENDING" | "OPEN" => matches!(new_status, "QUOTED" | "ACCEPTED" | "IN_PROGRESS" | "CANCELLED"),
+            "QUOTED" => matches!(new_status, "ACCEPTED" | "IN_PROGRESS" | "CANCELLED"),
+            "ACCEPTED" => matches!(new_status, "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"),
+            "SCHEDULED" => matches!(new_status, "IN_PROGRESS" | "COMPLETED" | "CANCELLED"),
+            "IN_PROGRESS" => matches!(new_status, "COMPLETED" | "CANCELLED"),
             _ => false,
         }
     }
@@ -36,7 +37,7 @@ impl Model {
             active.cancelled_at = Set(Some(now));
         }
 
-        if new_status == "ACCEPTED" && prof_id.is_some() {
+        if (new_status == "ACCEPTED" || new_status == "IN_PROGRESS") && prof_id.is_some() {
             if active.professional_profile_id.as_ref().is_none() {
                 active.professional_profile_id = Set(prof_id);
             }

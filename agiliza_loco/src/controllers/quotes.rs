@@ -64,12 +64,29 @@ async fn create_quote(
     .await?;
 
     if s_req.status == "PENDING" {
-        let mut active: service_requests::ActiveModel = s_req.into();
+        let mut active: service_requests::ActiveModel = s_req.clone().into();
         active.status = Set("QUOTED".to_string());
         active.quoted_price = Set(Some(params.price));
         active.professional_profile_id = Set(Some(prof.id));
         let _ = active.update(&ctx.db).await;
     }
+
+    // Disparar Push Notification para o cliente
+    let db_clone = ctx.db.clone();
+    let client_uid = s_req.client_id;
+    let s_req_title = s_req.title.clone();
+    let prof_name = user.name.clone();
+    let quote_price = params.price;
+
+    tokio::spawn(async move {
+        crate::services::push::send_web_push(
+            &db_clone,
+            client_uid,
+            "💰 Nova Proposta Recebida!",
+            &format!("{} enviou uma proposta de R$ {:.2} para \"{}\"", prof_name, quote_price, s_req_title),
+            "/cliente/pedidos"
+        ).await;
+    });
 
     format::json(quote)
 }

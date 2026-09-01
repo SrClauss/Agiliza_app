@@ -48,6 +48,8 @@ async fn create_review(
         return bad_request("You cannot review your own professional profile.");
     }
 
+    let comment_val = params.comment.clone().unwrap_or_default();
+
     let rev = reviews::ActiveModel {
         client_id: Set(user.id),
         professional_profile_id: Set(prof.id),
@@ -59,6 +61,29 @@ async fn create_review(
     .await?;
 
     let _ = ReviewModel::update_professional_rating(&ctx.db, prof.id).await;
+
+    // Disparar Push Notification para o profissional
+    let db_clone = ctx.db.clone();
+    let prof_uid = prof.user_id;
+    let reviewer_name = user.name.clone();
+    let rating_val = params.rating;
+
+    tokio::spawn(async move {
+        let stars = "⭐".repeat(rating_val as usize);
+        let body_msg = if !comment_val.is_empty() {
+            format!("\"{}\"", comment_val)
+        } else {
+            "Você recebeu uma nova avaliação de atendimento!".to_string()
+        };
+
+        crate::services::push::send_web_push(
+            &db_clone,
+            prof_uid,
+            &format!("{} Nova Avaliação de {}", stars, reviewer_name),
+            &body_msg,
+            "/pro/perfil"
+        ).await;
+    });
 
     format::json(rev)
 }
@@ -87,7 +112,7 @@ async fn delete_review(
 
 pub fn routes() -> Routes {
     Routes::new()
-        .prefix("/api/auth/reviews")
+        .prefix("/api/reviews")
         .add("/", get(list_reviews).post(create_review))
         .add("/{id}", delete(delete_review))
 }

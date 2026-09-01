@@ -210,6 +210,26 @@ async fn create_service_request(
     .insert(&ctx.db)
     .await?;
 
+    // Push notifications para o profissional específico
+    let db_clone = ctx.db.clone();
+    let req_title = req.title.clone();
+    let client_name = user.name.clone();
+    let target_prof_id = params.professional_profile;
+
+    tokio::spawn(async move {
+        if let Some(prof_id) = target_prof_id {
+            if let Ok(Some(prof)) = professional_profiles::Entity::find_by_id(prof_id).one(&db_clone).await {
+                crate::services::push::send_web_push(
+                    &db_clone,
+                    prof.user_id,
+                    &format!("🔔 Novo Pedido de {}!", client_name),
+                    &format!("Solicitação: {}", req_title),
+                    "/pro"
+                ).await;
+            }
+        }
+    });
+
     format::json(req)
 }
 
@@ -355,6 +375,23 @@ async fn unlock_contact(
     .insert(&ctx.db)
     .await?;
 
+    // Disparar Push Notification para o cliente avisando que o profissional aceitou/desbloqueou o pedido
+    let db_clone = ctx.db.clone();
+    let client_uid = r.client_id;
+    let req_id_val = r.id;
+    let req_title_val = r.title.clone();
+    let prof_name = user.name.clone();
+
+    tokio::spawn(async move {
+        crate::services::push::send_web_push(
+            &db_clone,
+            client_uid,
+            "🎉 Um Profissional Aceitou Seu Pedido!",
+            &format!("{} desbloqueou seu pedido \"{}\" e está pronto para conversar no chat.", prof_name, req_title_val),
+            &format!("/chat/{}", req_id_val)
+        ).await;
+    });
+
     format::json(serde_json::json!({ "success": true, "remaining": limit - count - 1 }))
 }
 
@@ -380,9 +417,80 @@ async fn update_status(
         .await?;
 
     let prof_id = prof.map(|p| p.id);
+    let client_id_val = req.client_id;
+    let req_title_val = req.title.clone();
+    let req_id_val = req.id;
+    let new_st = params.status.clone();
+    let actor_is_client = user.id == client_id_val;
+    let prof_profile_id_val = req.professional_profile_id.or(prof_id);
 
     match req.transition_to(&ctx.db, &params.status, prof_id).await {
-        Ok(updated) => format::json(updated),
+        Ok(updated) => {
+            // Disparar Push Notifications de acordo com a mudança de status
+            let db_clone = ctx.db.clone();
+            tokio::spawn(async move {
+                match new_st.as_str() {
+                    "ACCEPTED" | "IN_PROGRESS" => {
+                        if !actor_is_client {
+                            crate::services::push::send_web_push(
+                                &db_clone,
+                                client_id_val,
+                                "🚀 Pedido em Andamento!",
+                                &format!("O atendimento para o pedido \"{}\" foi iniciado.", req_title_val),
+                                &format!("/chat/{}", req_id_val)
+                            ).await;
+                        }
+                    },
+                    "COMPLETED" => {
+                        if !actor_is_client {
+                            // Profissional concluiu -> notifica cliente para avaliar
+                            crate::services::push::send_web_push(
+                                &db_clone,
+                                client_id_val,
+                                "⭐ Pedido Finalizado! Avalie o Serviço",
+                                &format!("O serviço \"{}\" foi concluído. Avalie o atendimento do profissional!", req_title_val),
+                                "/cliente/pedidos"
+                            ).await;
+                        } else if let Some(prof_pid) = prof_profile_id_val {
+                            // Cliente concluiu -> notifica profissional
+                            if let Ok(Some(prof_rec)) = professional_profiles::Entity::find_by_id(prof_pid).one(&db_clone).await {
+                                crate::services::push::send_web_push(
+                                    &db_clone,
+                                    prof_rec.user_id,
+                                    "✅ Pedido Concluído pelo Cliente!",
+                                    &format!("O cliente confirmou a conclusão de \"{}\".", req_title_val),
+                                    "/pro/servicos"
+                                ).await;
+                            }
+                        }
+                    },
+                    "CANCELLED" => {
+                        let notify_uid = if actor_is_client {
+                            if let Some(prof_pid) = prof_profile_id_val {
+                                if let Ok(Some(prof_rec)) = professional_profiles::Entity::find_by_id(prof_pid).one(&db_clone).await {
+                                    Some(prof_rec.user_id)
+                                } else { None }
+                            } else { None }
+                        } else {
+                            Some(client_id_val)
+                        };
+
+                        if let Some(to_uid) = notify_uid {
+                            crate::services::push::send_web_push(
+                                &db_clone,
+                                to_uid,
+                                "❌ Pedido Cancelado",
+                                &format!("O serviço \"{}\" foi cancelado.", req_title_val),
+                                if actor_is_client { "/pro/servicos" } else { "/cliente/pedidos" }
+                            ).await;
+                        }
+                    },
+                    _ => {}
+                }
+            });
+
+            format::json(updated)
+        },
         Err(err) => bad_request(err.to_string()),
     }
 }

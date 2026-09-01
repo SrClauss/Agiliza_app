@@ -33,6 +33,12 @@ pub struct WsAuthQuery {
 
 #[derive(Debug, Deserialize)]
 pub struct IncomingWsMessage {
+    pub content: Option<String>,
+    pub r#type: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SendMessagePayload {
     pub content: String,
 }
 
@@ -100,6 +106,86 @@ async fn list_messages(
     format::json(dtos)
 }
 
+// Rota HTTP REST para envio de mensagem em Pedido (Fallback confiável para WebSocket)
+#[debug_handler]
+async fn send_order_message(
+    auth: auth::JWT,
+    State(ctx): State<AppContext>,
+    Path(request_id): Path<uuid::Uuid>,
+    Json(payload): Json<SendMessagePayload>,
+) -> Result<Response> {
+    let user_id = uuid::Uuid::parse_str(&auth.claims.pid).map_err(|e| Error::BadRequest(e.to_string()))?;
+    let trimmed = payload.content.trim().to_string();
+    if trimmed.is_empty() {
+        return bad_request("Message content cannot be empty.");
+    }
+
+    let msg_id = uuid::Uuid::new_v4();
+    let now: sea_orm::prelude::DateTimeWithTimeZone = chrono::Utc::now().into();
+
+    let active_msg = chat_messages::ActiveModel {
+        id: Set(msg_id),
+        service_request_id: Set(Some(request_id)),
+        sender_id: Set(user_id),
+        recipient_id: Set(None),
+        content: Set(trimmed.clone()),
+        created_at: Set(now),
+    };
+
+    active_msg.insert(&ctx.db).await?;
+
+    let sender_name = match users::Entity::find_by_id(user_id).one(&ctx.db).await {
+        Ok(Some(u)) => u.name,
+        _ => "Usuário".to_string(),
+    };
+
+    let ws_msg = WsChatMessage {
+        id: msg_id,
+        service_request_id: Some(request_id),
+        sender_id: user_id,
+        recipient_id: None,
+        sender_name: sender_name.clone(),
+        content: trimmed.clone(),
+        created_at: now.to_rfc3339(),
+    };
+
+    // Broadcast para WebSocket
+    let tx = get_or_create_room(request_id);
+    let _ = tx.send(ws_msg.clone());
+
+    // Disparar Push Notification
+    let db_clone = ctx.db.clone();
+    let s_name = sender_name;
+    let c_text = trimmed;
+
+    tokio::spawn(async move {
+        if let Ok(Some(req)) = crate::models::_entities::service_requests::Entity::find_by_id(request_id).one(&db_clone).await {
+            let target_uid = if req.client_id == user_id {
+                if let Some(prof_profile_id) = req.professional_profile_id {
+                    if let Ok(Some(prof)) = crate::models::_entities::professional_profiles::Entity::find_by_id(prof_profile_id).one(&db_clone).await {
+                        Some(prof.user_id)
+                    } else { None }
+                } else { None }
+            } else {
+                Some(req.client_id)
+            };
+
+            if let Some(to_user) = target_uid {
+                let link = format!("/chat/{}", request_id);
+                crate::services::push::send_web_push(
+                    &db_clone,
+                    to_user,
+                    &format!("💬 Nova mensagem de {}", s_name),
+                    &c_text,
+                    &link
+                ).await;
+            }
+        }
+    });
+
+    format::json(ws_msg)
+}
+
 // Rota HTTP REST para listar mensagens de Chat Direto (sem pedido) entre Usuários
 #[debug_handler]
 async fn list_direct_messages(
@@ -146,6 +232,72 @@ async fn list_direct_messages(
     }
 
     format::json(dtos)
+}
+
+// Rota HTTP REST para envio de mensagem em Chat Direto (Fallback confiável para WebSocket)
+#[debug_handler]
+async fn send_direct_message(
+    auth: auth::JWT,
+    State(ctx): State<AppContext>,
+    Path(target_user_id): Path<uuid::Uuid>,
+    Json(payload): Json<SendMessagePayload>,
+) -> Result<Response> {
+    let user_id = uuid::Uuid::parse_str(&auth.claims.pid).map_err(|e| Error::BadRequest(e.to_string()))?;
+    let trimmed = payload.content.trim().to_string();
+    if trimmed.is_empty() {
+        return bad_request("Message content cannot be empty.");
+    }
+
+    let msg_id = uuid::Uuid::new_v4();
+    let now: sea_orm::prelude::DateTimeWithTimeZone = chrono::Utc::now().into();
+
+    let active_msg = chat_messages::ActiveModel {
+        id: Set(msg_id),
+        service_request_id: Set(None),
+        sender_id: Set(user_id),
+        recipient_id: Set(Some(target_user_id)),
+        content: Set(trimmed.clone()),
+        created_at: Set(now),
+    };
+
+    active_msg.insert(&ctx.db).await?;
+
+    let sender_name = match users::Entity::find_by_id(user_id).one(&ctx.db).await {
+        Ok(Some(u)) => u.name,
+        _ => "Usuário".to_string(),
+    };
+
+    let ws_msg = WsChatMessage {
+        id: msg_id,
+        service_request_id: None,
+        sender_id: user_id,
+        recipient_id: Some(target_user_id),
+        sender_name: sender_name.clone(),
+        content: trimmed.clone(),
+        created_at: now.to_rfc3339(),
+    };
+
+    let room_id = get_direct_room_id(user_id, target_user_id);
+    let tx = get_or_create_room(room_id);
+    let _ = tx.send(ws_msg.clone());
+
+    // Disparar Push Notification
+    let db_clone = ctx.db.clone();
+    let s_name = sender_name;
+    let c_text = trimmed;
+
+    tokio::spawn(async move {
+        let link = format!("/chat/direct/{}", user_id);
+        crate::services::push::send_web_push(
+            &db_clone,
+            target_user_id,
+            &format!("💬 Nova mensagem de {}", s_name),
+            &c_text,
+            &link
+        ).await;
+    });
+
+    format::json(ws_msg)
 }
 
 // Rota de Upgrade WebSocket para Pedidos
@@ -195,17 +347,44 @@ async fn handle_socket(
     recipient_id: Option<uuid::Uuid>,
     ctx: AppContext,
 ) {
+    let (mut sender_ws, mut receiver_ws) = socket.split();
+
+    // Validar autenticação
+    if user_id.is_nil() {
+        tracing::warn!("[WebSocket Chat] Conexão rejeitada: token ausente ou inválido na sala {}", room_id);
+        let _ = sender_ws.send(Message::Close(Some(axum::extract::ws::CloseFrame {
+            code: axum::extract::ws::close_code::POLICY,
+            reason: "Token de autenticação inválido ou ausente".into(),
+        }))).await;
+        return;
+    }
+
     let tx = get_or_create_room(room_id);
     let mut rx = tx.subscribe();
 
-    let (mut sender_ws, mut receiver_ws) = socket.split();
-
-    // Task de envio pro WS
+    // Task de envio pro WS com heartbeat periódico
     let mut send_task = tokio::spawn(async move {
-        while let Ok(msg) = rx.recv().await {
-            if let Ok(json_str) = serde_json::to_string(&msg) {
-                if sender_ws.send(Message::Text(json_str.into())).await.is_err() {
-                    break;
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(25));
+        loop {
+            tokio::select! {
+                _ = interval.tick() => {
+                    // Heartbeat ping frame para manter conexões móveis e proxies ativas
+                    if sender_ws.send(Message::Ping(vec![].into())).await.is_err() {
+                        break;
+                    }
+                }
+                res = rx.recv() => {
+                    match res {
+                        Ok(msg) => {
+                            if let Ok(json_str) = serde_json::to_string(&msg) {
+                                if sender_ws.send(Message::Text(json_str.into())).await.is_err() {
+                                    break;
+                                }
+                            }
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                    }
                 }
             }
         }
@@ -213,89 +392,102 @@ async fn handle_socket(
 
     // Task de recepção do WS
     let ctx_clone = ctx.clone();
+    let tx_clone = tx.clone();
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver_ws.next().await {
-            if let Message::Text(text) = msg {
-                if let Ok(incoming) = serde_json::from_str::<IncomingWsMessage>(&text) {
-                    if incoming.content.trim().is_empty() {
-                        continue;
-                    }
+            match msg {
+                Message::Text(text) => {
+                    if let Ok(incoming) = serde_json::from_str::<IncomingWsMessage>(&text) {
+                        // Tratar ping explícito do cliente
+                        if incoming.r#type.as_deref() == Some("ping") {
+                            continue;
+                        }
 
-                    let msg_id = uuid::Uuid::new_v4();
-                    let now: sea_orm::prelude::DateTimeWithTimeZone = chrono::Utc::now().into();
+                        if let Some(content) = incoming.content {
+                            let trimmed = content.trim().to_string();
+                            if trimmed.is_empty() {
+                                continue;
+                            }
 
-                    // Salvar mensagem no banco (Com ou Sem Pedido)
-                    let active_msg = chat_messages::ActiveModel {
-                        id: Set(msg_id),
-                        service_request_id: Set(req_id),
-                        sender_id: Set(user_id),
-                        recipient_id: Set(recipient_id),
-                        content: Set(incoming.content.clone()),
-                        created_at: Set(now),
-                    };
+                            let msg_id = uuid::Uuid::new_v4();
+                            let now: sea_orm::prelude::DateTimeWithTimeZone = chrono::Utc::now().into();
 
-                    if let Err(err) = active_msg.insert(&ctx_clone.db).await {
-                        tracing::error!("[Chat DB Error] Falha ao persistir mensagem {}: {:?}", msg_id, err);
-                    }
-
-                    // Buscar nome do remetente
-                    let sender_name = match users::Entity::find_by_id(user_id).one(&ctx_clone.db).await {
-                        Ok(Some(u)) => u.name,
-                        _ => "Usuário".to_string(),
-                    };
-
-                    let ws_msg = WsChatMessage {
-                        id: msg_id,
-                        service_request_id: req_id,
-                        sender_id: user_id,
-                        recipient_id,
-                        sender_name,
-                        content: incoming.content,
-                        created_at: now.to_rfc3339(),
-                    };
-
-                    // Broadcast na sala do WebSocket
-                    let _ = tx.send(ws_msg.clone());
-
-                    // Disparar Push Notification
-                    let db_clone = ctx_clone.db.clone();
-                    let s_name = ws_msg.sender_name.clone();
-                    let c_text = ws_msg.content.clone();
-
-                    tokio::spawn(async move {
-                        let target_uid = if let Some(target) = recipient_id {
-                            Some(target)
-                        } else if let Some(request_id) = req_id {
-                            if let Ok(Some(req)) = crate::models::_entities::service_requests::Entity::find_by_id(request_id).one(&db_clone).await {
-                                if req.client_id == user_id {
-                                    if let Some(prof_profile_id) = req.professional_profile_id {
-                                        if let Ok(Some(prof)) = crate::models::_entities::professional_profiles::Entity::find_by_id(prof_profile_id).one(&db_clone).await {
-                                            Some(prof.user_id)
-                                        } else { None }
-                                    } else { None }
-                                } else {
-                                    Some(req.client_id)
-                                }
-                            } else { None }
-                        } else { None };
-
-                        if let Some(to_user) = target_uid {
-                            let link = if recipient_id.is_some() {
-                                format!("/chat/direct/{}", user_id)
-                            } else {
-                                format!("/chat/{}", req_id.unwrap())
+                            // Salvar mensagem no banco (Com ou Sem Pedido)
+                            let active_msg = chat_messages::ActiveModel {
+                                id: Set(msg_id),
+                                service_request_id: Set(req_id),
+                                sender_id: Set(user_id),
+                                recipient_id: Set(recipient_id),
+                                content: Set(trimmed.clone()),
+                                created_at: Set(now),
                             };
 
-                            crate::services::push::send_web_push(
-                                &db_clone,
-                                to_user,
-                                &format!("💬 Nova mensagem de {}", s_name),
-                                &c_text,
-                                &link
-                            ).await;
+                            if let Err(err) = active_msg.insert(&ctx_clone.db).await {
+                                tracing::error!("[Chat DB Error] Falha ao persistir mensagem {}: {:?}", msg_id, err);
+                            }
+
+                            // Buscar nome do remetente
+                            let sender_name = match users::Entity::find_by_id(user_id).one(&ctx_clone.db).await {
+                                Ok(Some(u)) => u.name,
+                                _ => "Usuário".to_string(),
+                            };
+
+                            let ws_msg = WsChatMessage {
+                                id: msg_id,
+                                service_request_id: req_id,
+                                sender_id: user_id,
+                                recipient_id,
+                                sender_name,
+                                content: trimmed,
+                                created_at: now.to_rfc3339(),
+                            };
+
+                            // Broadcast na sala do WebSocket
+                            let _ = tx_clone.send(ws_msg.clone());
+
+                            // Disparar Push Notification
+                            let db_clone = ctx_clone.db.clone();
+                            let s_name = ws_msg.sender_name.clone();
+                            let c_text = ws_msg.content.clone();
+
+                            tokio::spawn(async move {
+                                let target_uid = if let Some(target) = recipient_id {
+                                    Some(target)
+                                } else if let Some(request_id) = req_id {
+                                    if let Ok(Some(req)) = crate::models::_entities::service_requests::Entity::find_by_id(request_id).one(&db_clone).await {
+                                        if req.client_id == user_id {
+                                            if let Some(prof_profile_id) = req.professional_profile_id {
+                                                if let Ok(Some(prof)) = crate::models::_entities::professional_profiles::Entity::find_by_id(prof_profile_id).one(&db_clone).await {
+                                                    Some(prof.user_id)
+                                                } else { None }
+                                            } else { None }
+                                        } else {
+                                            Some(req.client_id)
+                                        }
+                                    } else { None }
+                                } else { None };
+
+                                if let Some(to_user) = target_uid {
+                                    let link = if recipient_id.is_some() {
+                                        format!("/chat/direct/{}", user_id)
+                                    } else {
+                                        format!("/chat/{}", req_id.unwrap())
+                                    };
+
+                                    crate::services::push::send_web_push(
+                                        &db_clone,
+                                        to_user,
+                                        &format!("💬 Nova mensagem de {}", s_name),
+                                        &c_text,
+                                        &link
+                                    ).await;
+                                }
+                            });
                         }
-                    });
+                    }
                 }
+                Message::Close(_) => break,
+                _ => {}
             }
         }
     });
@@ -309,8 +501,8 @@ async fn handle_socket(
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api/chat")
-        .add("/{request_id}/messages", get(list_messages))
+        .add("/{request_id}/messages", get(list_messages).post(send_order_message))
         .add("/{request_id}/ws", get(ws_handler))
-        .add("/direct/{target_user_id}/messages", get(list_direct_messages))
+        .add("/direct/{target_user_id}/messages", get(list_direct_messages).post(send_direct_message))
         .add("/direct/{target_user_id}/ws", get(ws_direct_handler))
 }
