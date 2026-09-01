@@ -19,9 +19,9 @@ pub struct GoogleClaims {
     pub email_verified: bool,
     pub name: String,
     pub picture: Option<String>,
-    pub exp: usize,
-    pub iss: String,
-    pub aud: String,
+    pub exp: Option<usize>,
+    pub iss: Option<String>,
+    pub aud: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -49,13 +49,14 @@ pub async fn google_login(
             email_verified: true,
             name: format!("Profissional Google Partner"),
             picture: Some("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150".to_string()),
-            exp: 9999999999,
-            iss: "https://accounts.google.com".to_string(),
-            aud: "agiliza-app".to_string(),
+            exp: Some(9999999999),
+            iss: Some("https://accounts.google.com".to_string()),
+            aud: Some("agiliza-app".to_string()),
         }
     } else {
         let client = reqwest::Client::new();
-        let res = client.get(format!("https://oauth2.googleapis.com/tokeninfo?id_token={}", params.id_token))
+        // Fallback to tokeninfo if we still want to support it, but userinfo is standard for access_token
+        let res = client.get(format!("https://www.googleapis.com/oauth2/v3/userinfo?access_token={}", params.id_token))
             .send()
             .await
             .map_err(|_| Error::Unauthorized("Failed to verify Google token".to_string()))?;
