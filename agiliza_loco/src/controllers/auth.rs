@@ -15,6 +15,14 @@ pub struct UserProfileDto {
     pub is_verified: Option<bool>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct OnboardingParams {
+    pub cpf: String,
+    pub phone: Option<String>,
+    pub password: Option<String>,
+    pub category: Option<String>,
+}
+
 impl UserProfileDto {
     pub fn from_user(user: &users::Model) -> Self {
         Self {
@@ -284,6 +292,35 @@ async fn reset(
     format::json(())
 }
 
+#[debug_handler]
+async fn onboarding(
+    auth: auth::JWT,
+    State(ctx): State<AppContext>,
+    Json(params): Json<OnboardingParams>,
+) -> Result<Response> {
+    let user = users::Model::find_by_id(&ctx.db, &auth.claims.pid).await?;
+    
+    let mut active_user: users::ActiveModel = user.into();
+    
+    let clean_cpf = params.cpf.replace(['.', '-'], "");
+    active_user.cpf = sea_orm::Set(Some(clean_cpf));
+    
+    if let Some(phone) = params.phone {
+        active_user.phone = sea_orm::Set(Some(phone));
+    }
+    
+    if let Some(password) = params.password {
+        if !password.trim().is_empty() {
+            active_user.password = sea_orm::Set(loco_rs::hash::hash_password(&password)?);
+        }
+    }
+    
+    use sea_orm::ActiveModelTrait;
+    active_user.update(&ctx.db).await?;
+    
+    format::json(())
+}
+
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api/auth")
@@ -295,4 +332,5 @@ pub fn routes() -> Routes {
         .add("/current", get(current))
         .add("/magic-link", post(magic_link))
         .add("/magic-link/{token}", get(magic_link_verify))
+        .add("/onboarding", post(onboarding))
 }

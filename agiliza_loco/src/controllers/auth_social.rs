@@ -33,6 +33,7 @@ pub struct LoginResponse {
     pub role: Option<String>,
     pub is_staff: bool,
     pub is_verified: bool,
+    pub needs_onboarding: bool,
 }
 
 pub async fn google_login(
@@ -150,6 +151,8 @@ pub async fn google_login(
         .generate_jwt(&jwt_secret.secret, jwt_secret.expiration)
         .map_err(|e| Error::Unauthorized(e.to_string()))?;
 
+    let needs_onboarding = user.cpf.is_none() || user.cpf.as_deref() == Some("");
+
     format::json(LoginResponse {
         token,
         pid: user.id.to_string(),
@@ -158,6 +161,7 @@ pub async fn google_login(
         role: user.role,
         is_staff: user.is_staff.unwrap_or(false),
         is_verified: user.is_verified.unwrap_or(false),
+        needs_onboarding,
     })
 }
 
