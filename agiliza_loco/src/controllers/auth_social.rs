@@ -16,8 +16,8 @@ pub struct GoogleLoginParams {
 pub struct GoogleClaims {
     pub sub: String,
     pub email: String,
-    pub email_verified: bool,
-    pub name: String,
+    pub email_verified: Option<bool>,
+    pub name: Option<String>,
     pub picture: Option<String>,
     pub exp: Option<usize>,
     pub iss: Option<String>,
@@ -46,8 +46,8 @@ pub async fn google_login(
         GoogleClaims {
             sub: format!("google_sub_{}", target_role.to_lowercase()),
             email: format!("google_{}@agilizapro.com.br", target_role.to_lowercase()),
-            email_verified: true,
-            name: format!("Profissional Google Partner"),
+            email_verified: Some(true),
+            name: Some(format!("Profissional Google Partner")),
             picture: Some("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150".to_string()),
             exp: Some(9999999999),
             iss: Some("https://accounts.google.com".to_string()),
@@ -65,8 +65,12 @@ pub async fn google_login(
             return Err(Error::Unauthorized("Invalid Google token".to_string()));
         }
 
-        res.json().await
-            .map_err(|_| Error::Unauthorized("Failed to parse Google token claims".to_string()))?
+        let text = res.text().await.map_err(|_| Error::Unauthorized("Failed to read Google token claims".to_string()))?;
+        tracing::info!("Google userinfo response: {}", text);
+        serde_json::from_str(&text).map_err(|e| {
+            tracing::error!("Failed to parse Google token claims: {:?}", e);
+            Error::Unauthorized("Failed to parse Google token claims".to_string())
+        })?
     };
 
     let clean_email = claims.email.trim().to_lowercase();
@@ -100,14 +104,14 @@ pub async fn google_login(
     } else {
         let active = users::ActiveModel {
             email: Set(clean_email.clone()),
-            name: Set(claims.name.clone()),
+            name: Set(claims.name.clone().unwrap_or_else(|| "Usuário".to_string())),
             password: Set(loco_rs::hash::hash_password("google_oauth_user_pass")?),
             api_key: Set(format!("ako_{}", uuid::Uuid::new_v4().simple())),
             id: Set(uuid::Uuid::new_v4()),
             google_id: Set(Some(claims.sub)),
             auth_provider: Set(Some("google".to_string())),
             role: Set(Some(target_role.clone())),
-            is_verified: Set(Some(claims.email_verified)),
+            is_verified: Set(Some(claims.email_verified.unwrap_or(false))),
             is_active: Set(Some(true)),
             is_blocked: Set(Some(false)),
             is_staff: Set(Some(false)),
