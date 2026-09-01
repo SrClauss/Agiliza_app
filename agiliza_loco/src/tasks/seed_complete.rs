@@ -100,7 +100,7 @@ impl Task for SeedComplete {
         };
 
         // 2. Criar Ligação Não-Finalizada (Em Andamento) entre pro1 e cliente1
-        println!("🔗 Criando Ligação Ativa Não-Finalizada (ACCEPTED) entre pro1 e cliente1...");
+        println!("🔗 Criando Ligação Ativa Em Andamento (IN_PROGRESS) entre pro1 e cliente1...");
         let existing_req = service_requests::Entity::find()
             .filter(service_requests::Column::ClientId.eq(cliente1_user_id))
             .filter(service_requests::Column::Title.eq("Instalação de Quadro Elétrico & Chuveiro Pressurizado"))
@@ -108,6 +108,9 @@ impl Task for SeedComplete {
             .await?;
 
         let active_request_id = if let Some(req) = existing_req {
+            let mut active_req: service_requests::ActiveModel = req.clone().into();
+            active_req.status = Set("IN_PROGRESS".to_string());
+            let _ = active_req.update(&ctx.db).await;
             req.id
         } else {
             let req_id = Uuid::new_v4();
@@ -118,7 +121,7 @@ impl Task for SeedComplete {
                 service_category_id: Set(Some("eletrica".to_string())),
                 title: Set("Instalação de Quadro Elétrico & Chuveiro Pressurizado".to_string()),
                 description: Set("Preciso trocar o disjuntor principal da cozinha e instalar um chuveiro novo Lorenzetti de 7500W com fiação dedicada.".to_string()),
-                status: Set("ACCEPTED".to_string()),
+                status: Set("IN_PROGRESS".to_string()),
                 address: Set(Some("Rua das Flores, 123 - Apt 42, São Paulo - SP".to_string())),
                 quoted_price: Set(Some(Decimal::new(18000, 2))),
                 requested_date: Set(Some(now)),
