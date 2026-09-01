@@ -163,11 +163,11 @@ impl Task for SeedComplete {
             let _ = msg.insert(&ctx.db).await;
         }
 
-        // 3. Criar Pedidos em Todas as Fases do Fluxo (OPEN, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED)
-        println!("🔄 Criando Pedidos em TODAS as fases do fluxo (OPEN, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED)...");
+        // 3. Criar Pedidos em Fases do Fluxo Simplificado (OPEN, IN_PROGRESS, COMPLETED, CANCELLED)
+        println!("🔄 Criando Pedidos nas fases do fluxo simplificado (OPEN, IN_PROGRESS, COMPLETED, CANCELLED)...");
         let flow_requests = vec![
             ("OPEN", "Troca de Fiação Antiga em Sobrado", "eletrica", None, None),
-            ("ACCEPTED", "Reparo Hidráulico e Desentupimento 24h", "encanamento", Some(pro1_profile_id), Some(Decimal::new(22000, 2))),
+            ("IN_PROGRESS", "Reparo Hidráulico e Desentupimento 24h", "encanamento", Some(pro1_profile_id), Some(Decimal::new(22000, 2))),
             ("IN_PROGRESS", "Pintura Interna de Sala e Corredor", "pintura", Some(pro1_profile_id), Some(Decimal::new(45000, 2))),
             ("COMPLETED", "Instalação de Lustre e Tomadas LED", "eletrica", Some(pro1_profile_id), Some(Decimal::new(12000, 2))),
             ("CANCELLED", "Reforma de Parede com Umidade", "reformas", None, None),

@@ -9,9 +9,9 @@ impl Model {
         match self.status.as_str() {
             "PENDING" | "OPEN" => matches!(new_status, "QUOTED" | "ACCEPTED" | "IN_PROGRESS" | "CANCELLED"),
             "QUOTED" => matches!(new_status, "ACCEPTED" | "IN_PROGRESS" | "CANCELLED"),
-            "ACCEPTED" => matches!(new_status, "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"),
-            "SCHEDULED" => matches!(new_status, "IN_PROGRESS" | "COMPLETED" | "CANCELLED"),
-            "IN_PROGRESS" => matches!(new_status, "COMPLETED" | "CANCELLED"),
+            "ACCEPTED" => matches!(new_status, "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "PENDING" | "OPEN"),
+            "SCHEDULED" => matches!(new_status, "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "PENDING" | "OPEN"),
+            "IN_PROGRESS" => matches!(new_status, "COMPLETED" | "CANCELLED" | "PENDING" | "OPEN"),
             _ => false,
         }
     }
@@ -35,6 +35,8 @@ impl Model {
             active.completed_at = Set(Some(now));
         } else if new_status == "CANCELLED" {
             active.cancelled_at = Set(Some(now));
+        } else if new_status == "PENDING" || new_status == "OPEN" {
+            active.professional_profile_id = Set(None);
         }
 
         if (new_status == "ACCEPTED" || new_status == "IN_PROGRESS") && prof_id.is_some() {

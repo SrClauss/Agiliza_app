@@ -382,6 +382,9 @@ async fn unlock_contact(
     let req_title_val = r.title.clone();
     let prof_name = user.name.clone();
 
+    // Atualizar status do pedido diretamente para IN_PROGRESS se estiver PENDING / OPEN / ACCEPTED
+    let _ = r.transition_to(&ctx.db, "IN_PROGRESS", Some(p.id)).await;
+
     tokio::spawn(async move {
         crate::services::push::send_web_push(
             &db_clone,
