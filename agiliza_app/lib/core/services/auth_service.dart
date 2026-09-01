@@ -113,6 +113,59 @@ class AuthService {
     }
   }
 
+  /// GOOGLE LOGIN
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String idToken,
+    String role = 'CLIENT',
+  }) async {
+    try {
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        '/auth/social/google',
+        data: {
+          'id_token': idToken,
+          'role': role,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data as Map<String, dynamic>;
+        final token = data['token'] as String?;
+
+        if (token != null) {
+          await _saveTokens(accessToken: token, refreshToken: token);
+          final userMap = {
+            'id': data['pid'],
+            'email': data['email'],
+            'full_name': data['name'],
+            'role': data['role'] ?? role,
+          };
+          await _saveUserData(userMap);
+
+          return {
+            'success': true,
+            'message': 'Google Login successful',
+            'user': userMap,
+          };
+        }
+      }
+
+      return {
+        'success': false,
+        'message': _extractServerMessage(response.data) ?? 'Google Login failed',
+      };
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': _getAuthErrorMessage(e, fallback: 'Error connecting to Google Auth'),
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'An unexpected error occurred during Google sign-in: $e',
+      };
+    }
+  }
+
   /// LOGIN
   Future<Map<String, dynamic>> login({
     required String email,

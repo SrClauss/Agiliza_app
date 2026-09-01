@@ -58,6 +58,19 @@ impl Task for SeedData {
             ("pintura", "Pintura", "pintura", "🎨", "Pintura residencial e comercial", None),
             ("limpeza", "Limpeza", "limpeza", "🧹", "Faxina e limpeza pós-obra", None),
             ("reformas", "Reformas", "reformas", "🔨", "Pequenas reformas e alvenaria", None),
+            ("servicos-juridicos", "Serviços Jurídicos", "servicos-juridicos", "⚖️", "Consultoria, contratos e assessoria jurídica", None),
+            ("direito-trabalhista", "Direito Trabalhista", "direito-trabalhista", "📜", "Assessoria e cálculos trabalhistas", Some("servicos-juridicos")),
+            ("direito-civil", "Direito Civil & Família", "direito-civil", "🏛️", "Inventários, divórcios e contratos civis", Some("servicos-juridicos")),
+            ("psicologia", "Psicologia & Terapia", "psicologia", "🧠", "Atendimento psicológico e terapia", None),
+            ("nutricao", "Nutrição", "nutricao", "🥗", "Consultoria nutricional e reeducação alimentar", None),
+            ("personal-trainer", "Personal Trainer", "personal-trainer", "🏋️", "Treino personalizado presencial e online", None),
+            ("programacao", "Programação & TI", "programacao", "💻", "Desenvolvimento de sites, apps e sistemas", None),
+            ("desenvolvimento-web", "Desenvolvimento Web", "desenvolvimento-web", "🌐", "Criação de sites e e-commerce", Some("programacao")),
+            ("suporte-tecnico", "Assistência Técnica TI", "suporte-tecnico", "🖥️", "Manutenção de computadores e redes", Some("programacao")),
+            ("design-grafico", "Design & Identidade Visual", "design-grafico", "🎨", "Criação de logos e artes visuais", None),
+            ("marketing-digital", "Marketing Digital", "marketing-digital", "📈", "Gestão de redes sociais e anúncios", None),
+            ("mecanica-automotiva", "Mecânica Automotiva", "mecanica-automotiva", "🚗", "Manutenção mecânica e elétrica veicular", None),
+            ("aulas-particulares", "Aulas Particulares", "aulas-particulares", "📚", "Reforço escolar e idiomas", None),
         ];
 
         for (id, name, slug, icon, desc, parent) in categories_data {

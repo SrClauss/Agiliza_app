@@ -94,10 +94,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  void _handleSocialSignIn(String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Continue with $provider coming soon')),
-    );
+  Future<void> _handleSocialSignIn(String provider) async {
+    if (provider != 'Google') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Continue with $provider coming soon')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _loginError = null;
+    });
+
+    try {
+      final authNotifier = ref.read(authNotifierProvider.notifier);
+      final fakeDevIdToken = 'dev_google_token_${DateTime.now().millisecondsSinceEpoch}';
+      
+      // Envia requisição social login para a API Loco
+      final res = await authNotifier.loginWithGoogle(idToken: fakeDevIdToken, role: 'CLIENT');
+
+      if (!mounted) return;
+
+      if (res['success'] as bool) {
+        final authState = ref.read(authNotifierProvider);
+        final targetRoute = authState.role == UserRole.professional
+            ? '/dashboard'
+            : '/home';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? 'Login com Google realizado com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.go(targetRoute);
+      } else {
+        setState(() {
+          _loginError = res['message']?.toString() ?? 'Falha no login com Google';
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loginError = 'Erro ao conectar com Google. Tente novamente.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _handleForgotPassword() {

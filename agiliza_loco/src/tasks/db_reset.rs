@@ -50,6 +50,19 @@ impl Task for DbReset {
             ("instalacao-chuveiro", "Instalação de Chuveiro", "Instalação e troca de chuveiros e resistências"),
             ("troca-fiacao", "Troca de Fiação", "Substituição de fiação antiga e quadros de luz"),
             ("desentupimento", "Desentupimento", "Desentupimento de pias, ralos e vaso sanitário"),
+            ("servicos-juridicos", "Serviços Jurídicos", "Consultoria, contratos e assessoria jurídica"),
+            ("direito-trabalhista", "Direito Trabalhista", "Assessoria e cálculos trabalhistas"),
+            ("direito-civil", "Direito Civil & Família", "Inventários, divórcios e contratos civis"),
+            ("psicologia", "Psicologia & Terapia", "Atendimento psicológico, terapia individual e de casal"),
+            ("nutricao", "Nutrição", "Consultoria nutricional e reeducação alimentar"),
+            ("personal-trainer", "Personal Trainer", "Treino personalizado presencial e online"),
+            ("programacao", "Programação & TI", "Desenvolvimento de sites, apps e sistemas"),
+            ("desenvolvimento-web", "Desenvolvimento Web", "Criação de sites, landing pages e e-commerce"),
+            ("suporte-tecnico", "Assistência Técnica TI", "Conserto de computadores, notebooks e redes"),
+            ("design-grafico", "Design & Identidade Visual", "Criação de logos, banners e materiais gráficos"),
+            ("marketing-digital", "Marketing Digital", "Gestão de tráfego, redes sociais e SEO"),
+            ("mecanica-automotiva", "Mecânica Automotiva", "Manutenção mecânica, elétrica e socorro 24h"),
+            ("aulas-particulares", "Aulas Particulares", "Reforço escolar, idiomas e música"),
         ];
 
         for (id, name, desc) in default_cats {

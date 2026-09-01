@@ -25,8 +25,9 @@ for p in plans:
         VALUES (?, ?, ?, ?, ?, ?, ?, DATETIME('now'), DATETIME('now'))
     """, p)
 
-# 2. Garantir Categorias
+# 2. Expandir e Garantir Categorias
 categories = [
+    # Manutenção & Reformas
     ("eletrica", "Elétrica", "eletrica", "⚡", "Serviços elétricos em geral", None),
     ("instalacao-chuveiro", "Instalação de Chuveiro", "instalacao-chuveiro", "🚿", "Instalação e reparo de chuveiros elétricos", "eletrica"),
     ("troca-fiacao", "Troca de Fiação", "troca-fiacao", "🔌", "Manutenção e substituição de fiação residencial", "eletrica"),
@@ -34,7 +35,32 @@ categories = [
     ("desentupimento", "Desentupimento", "desentupimento", "🪠", "Desentupimento de pias, ralos e vasos", "encanamento"),
     ("pintura", "Pintura", "pintura", "🎨", "Pintura residencial e comercial", None),
     ("limpeza", "Limpeza", "limpeza", "🧹", "Faxina e limpeza pós-obra", None),
-    ("reformas", "Reformas", "reformas", "🔨", "Pequenas reformas e alvenaria", None)
+    ("reformas", "Reformas", "reformas", "🔨", "Pequenas reformas e alvenaria", None),
+    
+    # Serviços Jurídicos
+    ("servicos-juridicos", "Serviços Jurídicos", "servicos-juridicos", "⚖️", "Consultoria, contratos e assessoria jurídica", None),
+    ("direito-trabalhista", "Direito Trabalhista", "direito-trabalhista", "📜", "Assessoria e cálculos trabalhistas", "servicos-juridicos"),
+    ("direito-civil", "Direito Civil & Família", "direito-civil", "🏛️", "Inventários, divórcios e contratos civis", "servicos-juridicos"),
+    
+    # Saúde & Bem-Estar
+    ("psicologia", "Psicologia & Terapia", "psicologia", "🧠", "Atendimento psicológico, terapia individual e de casal", None),
+    ("nutricao", "Nutrição", "nutricao", "🥗", "Consultoria nutricional e reeducação alimentar", None),
+    ("personal-trainer", "Personal Trainer", "personal-trainer", "🏋️", "Treino personalizado presencial e online", None),
+    
+    # Tecnologia & Programação
+    ("programacao", "Programação & Tecnologia", "programacao", "💻", "Desenvolvimento de sites, apps e sistemas", None),
+    ("desenvolvimento-web", "Desenvolvimento Web", "desenvolvimento-web", "🌐", "Criação de sites, landing pages e e-commerce", "programacao"),
+    ("suporte-tecnico", "Assistência Técnica & TI", "suporte-tecnico", "🖥️", "Conserto de computadores, notebooks e redes", "programacao"),
+    
+    # Design & Marketing
+    ("design-grafico", "Design & Identidade Visual", "design-grafico", "🎨", "Criação de logos, banners e materiais gráficos", None),
+    ("marketing-digital", "Marketing Digital & Redes Sociais", "marketing-digital", "📈", "Gestão de tráfego, redes sociais e SEO", None),
+    
+    # Automotivo
+    ("mecanica-automotiva", "Mecânica Automotiva", "mecanica-automotiva", "🚗", "Manutenção mecânica, elétrica e socorro 24h", None),
+    
+    # Aulas & Treinamentos
+    ("aulas-particulares", "Aulas Particulares & Idiomas", "aulas-particulares", "📚", "Reforço escolar, idiomas e música", None)
 ]
 
 cat_ids = []

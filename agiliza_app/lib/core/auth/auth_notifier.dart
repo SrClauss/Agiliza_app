@@ -120,6 +120,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
     return result;
   }
 
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String idToken,
+    String role = 'CLIENT',
+  }) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    final result = await _authService.loginWithGoogle(
+      idToken: idToken,
+      role: role,
+    );
+
+    if (result['success'] == true) {
+      final userMap = result['user'] as Map<String, dynamic>?;
+      final authUser = userMap != null ? AuthUser.fromJson(userMap) : null;
+      state = AuthState(
+        isLoading: false,
+        isAuthenticated: authUser != null,
+        user: authUser,
+        errorMessage: authUser == null ? 'Unable to parse user role' : null,
+      );
+    } else {
+      state = state.copyWith(
+        isLoading: false,
+        isAuthenticated: false,
+        errorMessage: result['message']?.toString() ?? 'Google Login failed',
+      );
+    }
+
+    return result;
+  }
+
   Future<bool> logout() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     final success = await _authService.logout();
