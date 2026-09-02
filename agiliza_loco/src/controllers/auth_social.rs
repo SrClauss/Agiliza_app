@@ -34,6 +34,7 @@ pub struct LoginResponse {
     pub is_staff: bool,
     pub is_verified: bool,
     pub needs_onboarding: bool,
+    pub profile_image: Option<String>,
 }
 
 pub async fn google_login(
@@ -172,6 +173,7 @@ pub async fn google_login(
         is_staff: user.is_staff.unwrap_or(false),
         is_verified: user.is_verified.unwrap_or(false),
         needs_onboarding,
+        profile_image: user.profile_image,
     })
 }
 

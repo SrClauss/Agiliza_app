@@ -13,6 +13,7 @@ pub struct UserProfileDto {
     pub email: String,
     pub role: Option<String>,
     pub is_verified: Option<bool>,
+    pub profile_image: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -31,6 +32,7 @@ impl UserProfileDto {
             email: user.email.clone(),
             role: user.role.clone(),
             is_verified: user.is_verified,
+            profile_image: user.profile_image.clone(),
         }
     }
 }
@@ -44,6 +46,7 @@ pub struct LoginResponse {
     pub role: Option<String>,
     pub is_staff: bool,
     pub is_verified: bool,
+    pub profile_image: Option<String>,
 }
 
 impl LoginResponse {
@@ -56,6 +59,7 @@ impl LoginResponse {
             role: user.role.clone(),
             is_staff: user.is_staff.unwrap_or(false),
             is_verified: user.is_verified.unwrap_or(false),
+            profile_image: user.profile_image.clone(),
         }
     }
 }
