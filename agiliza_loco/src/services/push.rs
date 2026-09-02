@@ -25,10 +25,21 @@ pub async fn send_web_push(db: &DatabaseConnection, user_id: uuid::Uuid, title: 
         return;
     }
 
+    // Garantir que a URL aponte sempre para o subdominio app.agilizapro.net (nunca para a raiz ou /)
+    let mut target_url = if url.starts_with('/') {
+        format!("https://app.agilizapro.net{}", url)
+    } else {
+        url.to_string()
+    };
+
+    if target_url == "https://agilizapro.net" || target_url == "https://agilizapro.net/" || target_url == "/" || target_url.is_empty() {
+        target_url = "https://app.agilizapro.net/chat".to_string();
+    }
+
     let payload = serde_json::json!({
         "title": title,
         "body": body,
-        "url": url
+        "url": target_url
     }).to_string();
 
     let client = match IsahcWebPushClient::new() {
