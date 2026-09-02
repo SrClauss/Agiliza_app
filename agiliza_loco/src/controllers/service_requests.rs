@@ -131,10 +131,18 @@ async fn list_service_requests(
         if user.id == req.client_id || user.is_staff.unwrap_or(false) {
             is_unlocked = true;
         } else if let Some(p) = &prof {
-            // Check if professional unlocked this contact
+            // Check if professional unlocked this specific service request or contact
             let unlocked = unlocked_contacts::Entity::find()
                 .filter(unlocked_contacts::Column::ProfessionalProfileId.eq(p.id))
-                .filter(unlocked_contacts::Column::ClientId.eq(req.client_id))
+                .filter(
+                    sea_orm::Condition::any()
+                        .add(unlocked_contacts::Column::ServiceRequestId.eq(req.id))
+                        .add(
+                            sea_orm::Condition::all()
+                                .add(unlocked_contacts::Column::ServiceRequestId.is_null())
+                                .add(unlocked_contacts::Column::ClientId.eq(req.client_id))
+                        )
+                )
                 .one(&ctx.db)
                 .await?;
             if unlocked.is_some() {
