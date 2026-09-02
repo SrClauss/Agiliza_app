@@ -96,6 +96,11 @@ pub async fn google_login(
             updated = true;
         }
 
+        if user.profile_image.is_none() && claims.picture.is_some() {
+            active.profile_image = Set(claims.picture.clone());
+            updated = true;
+        }
+
         if updated {
             active.updated_at = Set(now);
             user = active.update(&ctx.db).await?;
