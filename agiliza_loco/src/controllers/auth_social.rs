@@ -44,11 +44,12 @@ pub async fn google_login(
     let target_role = params.role.clone().unwrap_or_else(|| "PROFESSIONAL".to_string());
 
     let claims = if params.id_token.starts_with("dev_") || params.id_token == "test_token" {
+        let name_label = if target_role == "CLIENT" { "Cliente Google Partner" } else { "Profissional Google Partner" };
         GoogleClaims {
             sub: format!("google_sub_{}", target_role.to_lowercase()),
             email: format!("google_{}@agilizapro.com.br", target_role.to_lowercase()),
             email_verified: Some(true),
-            name: Some(format!("Profissional Google Partner")),
+            name: Some(name_label.to_string()),
             picture: Some("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150".to_string()),
             exp: Some(9999999999),
             iss: Some("https://accounts.google.com".to_string()),
@@ -92,7 +93,7 @@ pub async fn google_login(
             updated = true;
         }
 
-        if user.role.is_none() || user.role.as_deref() == Some("CLIENT") && target_role == "PROFESSIONAL" {
+        if user.role.as_ref() != Some(&target_role) {
             active.role = Set(Some(target_role.clone()));
             updated = true;
         }
