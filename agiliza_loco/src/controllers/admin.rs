@@ -40,7 +40,7 @@ pub struct GrantPlanPayload {
 // Middleware de verificacao de permissao Admin Staff
 async fn check_admin_staff(auth: &auth::JWT, db: &DatabaseConnection) -> Result<users::Model> {
     let user = users::Model::find_by_id(db, &auth.claims.pid).await?;
-    if !user.is_staff.unwrap_or(false) && user.role.as_deref() != Some("ADMIN") {
+    if !user.is_staff.unwrap_or(false)  {
         return Err(Error::Unauthorized("Acesso restrito ao Painel Administrativo".to_string()));
     }
     Ok(user)
@@ -301,7 +301,7 @@ pub async fn service_stats(
 #[derive(Debug, Deserialize, Serialize)]
 pub struct InviteStaffPayload {
     pub email: String,
-    pub role: Option<String>, // "ADMIN", "GERENTE", "SUPORTE"
+     // "ADMIN", "GERENTE", "SUPORTE"
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -323,7 +323,7 @@ pub async fn invite_staff(
     let _admin = check_admin_staff(&auth, &ctx.db).await?;
     let token = format!("stf_{}", uuid::Uuid::new_v4().simple());
     let now = chrono::Utc::now();
-    let assigned_role = payload.role.unwrap_or_else(|| "ADMIN".to_string());
+    let assigned_role = "ADMIN".to_string();
 
     // Se o usuario ja existir, atualizamos seu reset_token/invite_token. Se nao, criamos a conta pendente.
     let existing = users::Entity::find().filter(users::Column::Email.eq(&payload.email)).one(&ctx.db).await?;
@@ -332,7 +332,7 @@ pub async fn invite_staff(
         active.reset_token = Set(Some(token.clone()));
         active.reset_sent_at = Set(Some(now.into()));
         active.is_staff = Set(Some(true));
-        active.role = Set(Some(assigned_role.clone()));
+        
         active.update(&ctx.db).await?;
     } else {
         let dummy_password = loco_rs::hash::hash_password(&uuid::Uuid::new_v4().to_string())?;
@@ -342,7 +342,7 @@ pub async fn invite_staff(
             password: Set(dummy_password),
             name: Set("Pendente de Registro".to_string()),
             api_key: Set(format!("ako_{}", uuid::Uuid::new_v4().simple())),
-            role: Set(Some(assigned_role.clone())),
+            
             is_staff: Set(Some(true)),
             reset_token: Set(Some(token.clone())),
             reset_sent_at: Set(Some(now.into())),
@@ -390,7 +390,7 @@ pub async fn register_staff_with_token(
         active.reset_token = Set(None); // consome o token de convite
         active.reset_sent_at = Set(None);
         active.is_staff = Set(Some(true));
-        active.role = Set(Some("ADMIN".to_string()));
+        
         let updated = active.update(&ctx.db).await?;
 
         format::json(serde_json::json!({
@@ -399,7 +399,7 @@ pub async fn register_staff_with_token(
                 "id": updated.id,
                 "name": updated.name,
                 "email": updated.email,
-                "role": updated.role
+                
             }
         }))
     } else {

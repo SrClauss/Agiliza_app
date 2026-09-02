@@ -9,7 +9,7 @@ use rust_decimal::Decimal;
 #[derive(Debug, Deserialize)]
 pub struct GoogleLoginParams {
     pub id_token: String,
-    pub role: Option<String>,
+    
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -30,7 +30,7 @@ pub struct LoginResponse {
     pub pid: String,
     pub name: String,
     pub email: String,
-    pub role: Option<String>,
+    
     pub is_staff: bool,
     pub is_verified: bool,
     pub needs_onboarding: bool,
@@ -41,7 +41,7 @@ pub async fn google_login(
     State(ctx): State<AppContext>,
     Json(params): Json<GoogleLoginParams>,
 ) -> Result<Response> {
-    let target_role = params.role.clone().unwrap_or_else(|| "PROFESSIONAL".to_string());
+    let target_role = "PROFESSIONAL".to_string();
 
     let claims = if params.id_token.starts_with("dev_") || params.id_token == "test_token" {
         let name_label = if target_role == "CLIENT" { "Cliente Google Partner" } else { "Profissional Google Partner" };
@@ -93,8 +93,8 @@ pub async fn google_login(
             updated = true;
         }
 
-        if user.role.as_ref() != Some(&target_role) {
-            active.role = Set(Some(target_role.clone()));
+        if false {
+            
             updated = true;
         }
 
@@ -117,7 +117,7 @@ pub async fn google_login(
             id: Set(uuid::Uuid::new_v4()),
             google_id: Set(Some(claims.sub)),
             auth_provider: Set(Some("google".to_string())),
-            role: Set(Some(target_role.clone())),
+            
             is_verified: Set(Some(claims.email_verified.unwrap_or(false))),
             is_active: Set(Some(true)),
             is_blocked: Set(Some(false)),
@@ -131,7 +131,7 @@ pub async fn google_login(
     };
 
     // Garantir perfil de profissional se a role for PROFESSIONAL
-    if user.role.as_deref() == Some("PROFESSIONAL") {
+    if true {
         let profile_exists = professional_profiles::Entity::find()
             .filter(professional_profiles::Column::UserId.eq(user.id))
             .one(&ctx.db)
@@ -170,7 +170,7 @@ pub async fn google_login(
         pid: user.id.to_string(),
         name: user.name,
         email: user.email,
-        role: user.role,
+        
         is_staff: user.is_staff.unwrap_or(false),
         is_verified: user.is_verified.unwrap_or(false),
         needs_onboarding,

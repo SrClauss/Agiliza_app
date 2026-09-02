@@ -1,5 +1,5 @@
 use crate::models::_entities::{
-    professional_profiles, reviews, service_requests, unlocked_contacts, users,
+    professional_profile_categories, professional_profiles, reviews, service_requests, unlocked_contacts, users,
 };
 use loco_rs::prelude::*;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set, PaginatorTrait};
@@ -88,6 +88,12 @@ async fn list_service_requests(
     let filtered_query = if user.is_staff.unwrap_or(false) {
         db_query
     } else if let Some(prof) = &prof {
+        let prof_cats = professional_profile_categories::Entity::find()
+            .filter(professional_profile_categories::Column::ProfessionalProfileId.eq(prof.id))
+            .all(&ctx.db)
+            .await?;
+        let prof_cat_ids: Vec<String> = prof_cats.into_iter().map(|c| c.service_category_id).collect();
+
         db_query
             .filter(
                 sea_orm::Condition::any()
@@ -95,7 +101,8 @@ async fn list_service_requests(
                     .add(
                         sea_orm::Condition::all()
                             .add(service_requests::Column::ProfessionalProfileId.is_null())
-                            .add(service_requests::Column::Status.is_in(vec!["OPEN".to_string(), "PENDING".to_string()])),
+                            .add(service_requests::Column::Status.is_in(vec!["OPEN".to_string(), "PENDING".to_string()]))
+                            .add(service_requests::Column::ServiceCategoryId.is_in(prof_cat_ids)),
                     ),
             )
     } else {

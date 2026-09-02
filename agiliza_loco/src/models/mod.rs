@@ -12,3 +12,6 @@ pub mod professional_profile_categories;
 pub mod device_tokens;
 pub mod unlocked_contacts;
 pub mod chat_messages;
+pub mod advertisements;
+pub mod featured_professionals;
+pub mod subscription_plans;

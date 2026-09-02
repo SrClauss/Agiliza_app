@@ -8,7 +8,7 @@ pub struct LoginResponse {
     pub pid: String,
     pub name: String,
     pub email: String,
-    pub role: String,
+    
     pub is_staff: bool,
     pub is_verified: bool,
 }
@@ -21,8 +21,8 @@ impl LoginResponse {
             pid: user.id.to_string(),
             name: user.name.clone(),
             email: user.email.clone(),
-            role: user.role.clone().unwrap_or_else(|| "CLIENT".to_string()),
-            is_staff: user.is_staff.unwrap_or(false) || user.role.as_deref() == Some("ADMIN"),
+            
+            is_staff: user.is_staff.unwrap_or(false),
             is_verified: user.email_verified_at.is_some(),
         }
     }

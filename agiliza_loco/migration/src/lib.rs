@@ -26,6 +26,7 @@ mod m20260829_000001_create_advertisements;
 mod m20260829_000002_create_featured_professionals;
 mod m20260829_023700_add_recipient_id_to_chat_messages;
 
+mod m20260902_125643_drop_role_from_users;
 pub struct Migrator;
 
 #[async_trait::async_trait]
@@ -54,6 +55,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260829_000001_create_advertisements::Migration),
             Box::new(m20260829_000002_create_featured_professionals::Migration),
             Box::new(m20260829_023700_add_recipient_id_to_chat_messages::Migration),
+            Box::new(m20260902_125643_drop_role_from_users::Migration),
         ]
     }
 }

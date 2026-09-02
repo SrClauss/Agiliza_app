@@ -25,7 +25,7 @@ pub struct Model {
     pub magic_link_expiration: Option<DateTimeWithTimeZone>,
     pub phone: Option<String>,
     pub profile_image: Option<String>,
-    pub role: Option<String>,
+    
     pub is_verified: Option<bool>,
     pub is_active: Option<bool>,
     pub is_staff: Option<bool>,

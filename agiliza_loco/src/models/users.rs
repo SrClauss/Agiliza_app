@@ -29,8 +29,6 @@ pub struct RegisterParams {
     pub phone: Option<String>,
     #[serde(default)]
     pub cpf: Option<String>,
-    #[serde(default)]
-    pub role: Option<String>,
 }
 
 #[derive(Debug, Validate, Deserialize)]
@@ -206,7 +204,7 @@ impl Model {
             "User".to_string()
         };
 
-        let role = params.role.clone().unwrap_or_else(|| "CLIENT".to_string());
+        
         let password_hash =
             hash::hash_password(&params.password).map_err(|e| ModelError::Any(e.into()))?;
 
@@ -216,7 +214,7 @@ impl Model {
             name: ActiveValue::set(name),
             phone: ActiveValue::set(params.phone.clone()),
             cpf: ActiveValue::set(params.cpf.clone()),
-            role: ActiveValue::set(Some(role)),
+            
             is_verified: ActiveValue::set(Some(false)),
             is_active: ActiveValue::set(Some(true)),
             is_staff: ActiveValue::set(Some(false)),

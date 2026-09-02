@@ -11,7 +11,7 @@ pub struct UserProfileDto {
     pub pid: String,
     pub name: String,
     pub email: String,
-    pub role: Option<String>,
+    
     pub is_verified: Option<bool>,
     pub profile_image: Option<String>,
 }
@@ -30,7 +30,7 @@ impl UserProfileDto {
             pid: user.id.to_string(),
             name: user.name.clone(),
             email: user.email.clone(),
-            role: user.role.clone(),
+            
             is_verified: user.is_verified,
             profile_image: user.profile_image.clone(),
         }
@@ -43,7 +43,7 @@ pub struct LoginResponse {
     pub pid: String,
     pub name: String,
     pub email: String,
-    pub role: Option<String>,
+    
     pub is_staff: bool,
     pub is_verified: bool,
     pub profile_image: Option<String>,
@@ -56,7 +56,7 @@ impl LoginResponse {
             pid: user.id.to_string(),
             name: user.name.clone(),
             email: user.email.clone(),
-            role: user.role.clone(),
+            
             is_staff: user.is_staff.unwrap_or(false),
             is_verified: user.is_verified.unwrap_or(false),
             profile_image: user.profile_image.clone(),
@@ -69,7 +69,7 @@ pub struct CurrentResponse {
     pub pid: String,
     pub name: String,
     pub email: String,
-    pub role: Option<String>,
+    
     pub is_verified: Option<bool>,
     pub profile_image: Option<String>,
 }
@@ -80,7 +80,7 @@ impl CurrentResponse {
             pid: user.id.to_string(),
             name: user.name.clone(),
             email: user.email.clone(),
-            role: user.role.clone(),
+            
             is_verified: user.is_verified,
             profile_image: user.profile_image.clone(),
         }
