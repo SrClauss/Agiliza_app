@@ -71,6 +71,7 @@ pub struct CurrentResponse {
     pub email: String,
     pub role: Option<String>,
     pub is_verified: Option<bool>,
+    pub profile_image: Option<String>,
 }
 
 impl CurrentResponse {
@@ -81,6 +82,7 @@ impl CurrentResponse {
             email: user.email.clone(),
             role: user.role.clone(),
             is_verified: user.is_verified,
+            profile_image: user.profile_image.clone(),
         }
     }
 }
