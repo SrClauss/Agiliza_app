@@ -35,6 +35,7 @@ pub struct ProfessionalDto {
     pub average_rating: rust_decimal::Decimal,
     pub total_reviews: i32,
     pub subscription_status: String,
+    pub profile_image: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -90,6 +91,7 @@ async fn list_professionals(
                 average_rating: p.average_rating,
                 total_reviews: p.total_reviews,
                 subscription_status: p.subscription_status,
+                profile_image: u.profile_image.clone(),
             });
         }
     }
@@ -136,6 +138,7 @@ async fn list_featured_professionals(
                 average_rating: p.average_rating,
                 total_reviews: p.total_reviews,
                 subscription_status: p.subscription_status,
+                profile_image: u.profile_image.clone(),
             });
         }
     }
@@ -168,6 +171,7 @@ async fn list_featured_professionals(
                     average_rating: p.average_rating,
                     total_reviews: p.total_reviews,
                     subscription_status: p.subscription_status,
+                    profile_image: u.profile_image.clone(),
                 });
             }
         }
@@ -210,6 +214,7 @@ async fn me(
         average_rating: p.average_rating,
         total_reviews: p.total_reviews,
         subscription_status: p.subscription_status,
+        profile_image: u.profile_image.clone(),
     })
 }
 
@@ -281,6 +286,7 @@ async fn update_me(
         average_rating: updated_p.average_rating,
         total_reviews: updated_p.total_reviews,
         subscription_status: updated_p.subscription_status,
+        profile_image: updated_u.profile_image.clone(),
     })
 }
 
