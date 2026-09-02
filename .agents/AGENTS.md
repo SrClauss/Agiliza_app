@@ -1,3 +1,3 @@
 # Project Customization Rules
 
-- ALWAYS run `./deploy.sh "<commit message>"` automatically after completing any code changes or bug fixes in this project.
+- Do NOT run `./deploy.sh` automatically. Instead, provide the suggested command `./deploy.sh "<commit message>"` to the user so they can execute it manually when ready.
