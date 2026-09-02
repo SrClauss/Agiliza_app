@@ -87,27 +87,31 @@ async fn list_service_requests(
 
     let filtered_query = if user.is_staff.unwrap_or(false) {
         db_query
-    } else if let Some(prof) = &prof {
-        let prof_cats = professional_profile_categories::Entity::find()
-            .filter(professional_profile_categories::Column::ProfessionalProfileId.eq(prof.id))
-            .all(&ctx.db)
-            .await?;
-        let prof_cat_ids: Vec<String> = prof_cats.into_iter().map(|c| c.service_category_id).collect();
-
-        db_query
-            .filter(
-                sea_orm::Condition::any()
-                    .add(service_requests::Column::ProfessionalProfileId.eq(prof.id))
-                    .add(
-                        sea_orm::Condition::all()
-                            .add(service_requests::Column::ProfessionalProfileId.is_null())
-                            .add(service_requests::Column::Status.is_in(vec!["OPEN".to_string(), "PENDING".to_string()]))
-                            .add(service_requests::Column::ServiceCategoryId.is_in(prof_cat_ids)),
-                    ),
-            )
     } else {
-        db_query
-            .filter(service_requests::Column::ClientId.eq(user.id))
+        let mut condition = sea_orm::Condition::any()
+            .add(service_requests::Column::ClientId.eq(user.id));
+
+        if let Some(prof) = &prof {
+            let prof_cats = professional_profile_categories::Entity::find()
+                .filter(professional_profile_categories::Column::ProfessionalProfileId.eq(prof.id))
+                .all(&ctx.db)
+                .await?;
+            let prof_cat_ids: Vec<String> = prof_cats.into_iter().map(|c| c.service_category_id).collect();
+
+            let mut prof_open_cond = sea_orm::Condition::all()
+                .add(service_requests::Column::ProfessionalProfileId.is_null())
+                .add(service_requests::Column::Status.is_in(vec!["OPEN".to_string(), "PENDING".to_string()]));
+
+            if !prof_cat_ids.is_empty() {
+                prof_open_cond = prof_open_cond.add(service_requests::Column::ServiceCategoryId.is_in(prof_cat_ids));
+            }
+
+            condition = condition
+                .add(service_requests::Column::ProfessionalProfileId.eq(prof.id))
+                .add(prof_open_cond);
+        }
+
+        db_query.filter(condition)
     };
 
     let is_paginated = query.page.is_some() || query.per_page.is_some();
