@@ -61,6 +61,8 @@ pub struct ServiceRequestDto {
     pub client_name: String,
     pub client_phone: Option<String>,
     pub client_email: Option<String>,
+    pub client_profile_image: Option<String>,
+    pub professional_profile_image: Option<String>,
     pub is_unlocked: bool,
 }
 
@@ -169,10 +171,14 @@ async fn list_service_requests(
             client_name: "Cliente Anônimo".to_string(),
             client_phone: None,
             client_email: None,
+            client_profile_image: None,
+            professional_profile_image: None,
             is_unlocked,
         };
 
         if let Some(c) = client_user {
+            dto.client_profile_image = c.profile_image.clone();
+            
             if is_unlocked {
                 dto.client_name = c.name;
                 dto.client_phone = c.phone;
@@ -183,6 +189,15 @@ async fn list_service_requests(
                 dto.client_name = c.name.split(' ').next().unwrap_or("Cliente").to_string();
                 dto.address = None; // Hide full address
                 // Latitude/Longitude could be rounded or kept for distance calc
+            }
+        }
+        
+        // Populate professional profile image if applicable
+        if let Some(prof_id) = req.professional_profile_id {
+            if let Ok(Some(prof_model)) = professional_profiles::Entity::find_by_id(prof_id).one(&ctx.db).await {
+                if let Ok(Some(prof_user)) = users::Entity::find_by_id(prof_model.user_id).one(&ctx.db).await {
+                    dto.professional_profile_image = prof_user.profile_image;
+                }
             }
         }
 
@@ -306,10 +321,14 @@ async fn get_service_request(
         client_name: "Cliente Anônimo".to_string(),
         client_phone: None,
         client_email: None,
+        client_profile_image: None,
+        professional_profile_image: None,
         is_unlocked,
     };
 
     if let Some(c) = client_user {
+        dto.client_profile_image = c.profile_image.clone();
+        
         if is_unlocked {
             dto.client_name = c.name;
             dto.client_phone = c.phone;
@@ -317,6 +336,15 @@ async fn get_service_request(
         } else {
             dto.client_name = c.name.split(' ').next().unwrap_or("Cliente").to_string();
             dto.address = None;
+        }
+    }
+    
+    // Populate professional profile image if applicable
+    if let Some(prof_id) = r.professional_profile_id {
+        if let Ok(Some(prof_model)) = professional_profiles::Entity::find_by_id(prof_id).one(&ctx.db).await {
+            if let Ok(Some(prof_user)) = users::Entity::find_by_id(prof_model.user_id).one(&ctx.db).await {
+                dto.professional_profile_image = prof_user.profile_image;
+            }
         }
     }
 
