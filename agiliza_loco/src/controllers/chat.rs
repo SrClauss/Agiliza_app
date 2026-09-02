@@ -171,14 +171,16 @@ async fn send_order_message(
             };
 
             if let Some(to_user) = target_uid {
-                let link = format!("/chat/{}", request_id);
-                crate::services::push::send_web_push(
-                    &db_clone,
-                    to_user,
-                    &format!("💬 Nova mensagem de {}", s_name),
-                    &c_text,
-                    &link
-                ).await;
+                if to_user != user_id {
+                    let link = format!("/chat/{}", request_id);
+                    crate::services::push::send_web_push(
+                        &db_clone,
+                        to_user,
+                        &format!("💬 Nova mensagem de {}", s_name),
+                        &c_text,
+                        &link
+                    ).await;
+                }
             }
         }
     });
@@ -468,19 +470,21 @@ async fn handle_socket(
                                 } else { None };
 
                                 if let Some(to_user) = target_uid {
-                                    let link = if recipient_id.is_some() {
-                                        format!("/chat/direct/{}", user_id)
-                                    } else {
-                                        format!("/chat/{}", req_id.unwrap())
-                                    };
+                                    if to_user != user_id {
+                                        let link = if recipient_id.is_some() {
+                                            format!("/chat/direct/{}", user_id)
+                                        } else {
+                                            format!("/chat/{}", req_id.unwrap())
+                                        };
 
-                                    crate::services::push::send_web_push(
-                                        &db_clone,
-                                        to_user,
-                                        &format!("💬 Nova mensagem de {}", s_name),
-                                        &c_text,
-                                        &link
-                                    ).await;
+                                        crate::services::push::send_web_push(
+                                            &db_clone,
+                                            to_user,
+                                            &format!("💬 Nova mensagem de {}", s_name),
+                                            &c_text,
+                                            &link
+                                        ).await;
+                                    }
                                 }
                             });
                         }
