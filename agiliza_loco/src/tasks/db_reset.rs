@@ -42,30 +42,57 @@ impl Task for DbReset {
         println!("✨ Recriando categorias originais...");
         let now: sea_orm::prelude::DateTimeWithTimeZone = chrono::Utc::now().into();
         let default_cats = vec![
-            ("eletrica", "Elétrica", "Instalação, reparo e manutenção elétrica"),
-            ("encanamento", "Encanamento", "Reparos de vazamentos, tubulações e desentupimento"),
-            ("pintura", "Pintura", "Pintura residencial, comercial e texturas"),
-            ("limpeza", "Limpeza", "Limpeza pós-obra, residencial e comercial"),
-            ("reformas", "Reformas & Alvenaria", "Pequenas reformas, mestre de obras e estrutura"),
-            ("instalacao-chuveiro", "Instalação de Chuveiro", "Instalação e troca de chuveiros e resistências"),
-            ("troca-fiacao", "Troca de Fiação", "Substituição de fiação antiga e quadros de luz"),
-            ("desentupimento", "Desentupimento", "Desentupimento de pias, ralos e vaso sanitário"),
-            ("servicos-juridicos", "Serviços Jurídicos", "Consultoria, contratos e assessoria jurídica"),
-            ("direito-trabalhista", "Direito Trabalhista", "Assessoria e cálculos trabalhistas"),
-            ("direito-civil", "Direito Civil & Família", "Inventários, divórcios e contratos civis"),
-            ("psicologia", "Psicologia & Terapia", "Atendimento psicológico, terapia individual e de casal"),
-            ("nutricao", "Nutrição", "Consultoria nutricional e reeducação alimentar"),
-            ("personal-trainer", "Personal Trainer", "Treino personalizado presencial e online"),
-            ("programacao", "Programação & TI", "Desenvolvimento de sites, apps e sistemas"),
-            ("desenvolvimento-web", "Desenvolvimento Web", "Criação de sites, landing pages e e-commerce"),
-            ("suporte-tecnico", "Assistência Técnica TI", "Conserto de computadores, notebooks e redes"),
-            ("design-grafico", "Design & Identidade Visual", "Criação de logos, banners e materiais gráficos"),
-            ("marketing-digital", "Marketing Digital", "Gestão de tráfego, redes sociais e SEO"),
-            ("mecanica-automotiva", "Mecânica Automotiva", "Manutenção mecânica, elétrica e socorro 24h"),
-            ("aulas-particulares", "Aulas Particulares", "Reforço escolar, idiomas e música"),
+            // (id, name, desc, parent_id, is_remote, is_physical)
+            // Reparos & Construção
+            ("reparos-construcao", "Reparos & Construção", "Obras, reformas e manutenções", None, false, true),
+            ("eletrica", "Elétrica", "Instalações e reparos elétricos", Some("reparos-construcao"), false, true),
+            ("encanamento", "Encanamento", "Vazamentos e instalações hidráulicas", Some("reparos-construcao"), false, true),
+            ("pedreiro", "Pedreiro", "Alvenaria, reboco, pisos", Some("reparos-construcao"), false, true),
+            
+            // TI & Programação
+            ("tecnologia", "Tecnologia & TI", "Serviços de informática e desenvolvimento", None, true, true),
+            ("programacao", "Programação & Sistemas", "Desenvolvimento web, mobile e desktop", Some("tecnologia"), true, false),
+            ("suporte-tecnico", "Suporte Técnico", "Formatação, redes e manutenção de PCs", Some("tecnologia"), true, true),
+
+            // Consultoria & Jurídico
+            ("consultoria-juridico", "Consultoria & Jurídico", "Advogados e contadores", None, true, true),
+            ("direito-trabalhista", "Direito Trabalhista", "Assessoria trabalhista", Some("consultoria-juridico"), true, true),
+            ("direito-civil", "Direito Civil & Família", "Inventários e divórcios", Some("consultoria-juridico"), true, true),
+            ("contabilidade", "Contabilidade", "Imposto de renda e MEI", Some("consultoria-juridico"), true, true),
+
+            // Saúde & Bem-estar
+            ("saude-bem-estar", "Saúde & Bem-estar", "Profissionais de saúde e esportes", None, true, true),
+            ("psicologia", "Psicologia & Terapia", "Atendimento individual e casal", Some("saude-bem-estar"), true, true),
+            ("nutricao", "Nutrição", "Dietas e reeducação alimentar", Some("saude-bem-estar"), true, true),
+            ("personal-trainer", "Personal Trainer", "Treinos online e presenciais", Some("saude-bem-estar"), true, true),
+
+            // Marketing & Design
+            ("marketing-design", "Marketing & Design", "Criação visual e marketing digital", None, true, false),
+            ("design-grafico", "Design Gráfico", "Logos, banners e identidade", Some("marketing-design"), true, false),
+            ("marketing-digital", "Marketing Digital", "Gestão de tráfego e redes", Some("marketing-design"), true, false),
+
+            // Aulas & Educação
+            ("aulas-educacao", "Aulas & Educação", "Professores particulares e tutores", None, true, true),
+            ("aulas-particulares", "Aulas Particulares", "Reforço escolar", Some("aulas-educacao"), true, true),
+            ("idiomas", "Idiomas", "Aulas de Inglês, Espanhol, etc", Some("aulas-educacao"), true, true),
+
+            // Estética & Beleza
+            ("estetica-beleza", "Estética & Beleza", "Cabelo, maquiagem e unhas", None, false, true),
+            ("cabelereiro", "Cabelereiro(a)", "Cortes e penteados", Some("estetica-beleza"), false, true),
+            ("manicure", "Manicure/Pedicure", "Unhas decoradas", Some("estetica-beleza"), false, true),
+
+            // Limpeza
+            ("limpeza", "Limpeza", "Serviços domésticos e corporativos", None, false, true),
+            ("diarista", "Diarista/Faxina", "Limpeza residencial", Some("limpeza"), false, true),
+            ("pos-obra", "Limpeza Pós-Obra", "Limpeza pesada", Some("limpeza"), false, true),
+
+            // Eventos
+            ("eventos", "Eventos & Festas", "Buffet, fotografia, animação", None, false, true),
+            ("fotografia", "Fotografia", "Ensaios e cobertura de eventos", Some("eventos"), false, true),
+            ("dj", "DJ/Música", "Som para festas", Some("eventos"), false, true),
         ];
 
-        for (id, name, desc) in default_cats {
+        for (id, name, desc, parent_id, is_remote, is_physical) in default_cats {
             let cat = service_categories::ActiveModel {
                 id: sea_orm::Set(id.to_string()),
                 name: sea_orm::Set(name.to_string()),
@@ -73,7 +100,9 @@ impl Task for DbReset {
                 description: sea_orm::Set(Some(desc.to_string())),
                 icon: sea_orm::Set(Some("tools".to_string())),
                 is_active: sea_orm::Set(true),
-                parent_id: sea_orm::Set(None),
+                parent_id: sea_orm::Set(parent_id.map(|s| s.to_string())),
+                is_remote: sea_orm::Set(is_remote),
+                is_physical: sea_orm::Set(is_physical),
                 created_at: sea_orm::Set(now),
                 updated_at: sea_orm::Set(now),
             };

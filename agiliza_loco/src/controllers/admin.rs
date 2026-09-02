@@ -187,8 +187,31 @@ pub async fn list_users(
     let total_pages = paginator.num_pages().await?;
     let users_list = paginator.fetch_page(page.saturating_sub(1)).await?;
 
+    let user_ids: Vec<uuid::Uuid> = users_list.iter().map(|u| u.id).collect();
+    let profiles = professional_profiles::Entity::find()
+        .filter(professional_profiles::Column::UserId.is_in(user_ids))
+        .all(&ctx.db)
+        .await?;
+        
+    let profile_user_ids: std::collections::HashSet<uuid::Uuid> = profiles.into_iter().map(|p| p.user_id).collect();
+    
+    let enriched_users = users_list.into_iter().map(|u| {
+        let mut value = serde_json::to_value(&u).unwrap_or(serde_json::Value::Null);
+        if let Some(obj) = value.as_object_mut() {
+            let role = if u.is_staff.unwrap_or(false) {
+                "STAFF"
+            } else if profile_user_ids.contains(&u.id) {
+                "PROFESSIONAL"
+            } else {
+                "CLIENT"
+            };
+            obj.insert("role".to_string(), serde_json::Value::String(role.to_string()));
+        }
+        value
+    }).collect::<Vec<serde_json::Value>>();
+
     format::json(serde_json::json!({
-        "users": users_list,
+        "users": enriched_users,
         "total": total,
         "page": page,
         "page_size": page_size,

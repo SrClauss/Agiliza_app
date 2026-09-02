@@ -6,6 +6,7 @@ export function DashboardPage() {
   const [finStats, setFinStats] = useState<any>(null);
   const [servStats, setServStats] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
+  const [totalUsers, setTotalUsers] = useState<number>(0);
 
   useEffect(() => {
     fetch('/api/admin/stats/financial', { headers: { Authorization: `Bearer ${token}` } })
@@ -18,7 +19,15 @@ export function DashboardPage() {
 
     fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
-      .then(data => { if (Array.isArray(data)) setUsers(data); });
+      .then(data => {
+        if (data && Array.isArray(data.users)) {
+          setUsers(data.users);
+          setTotalUsers(data.total || data.users.length);
+        } else if (Array.isArray(data)) {
+          setUsers(data);
+          setTotalUsers(data.length);
+        }
+      });
   }, [token]);
 
   return (
@@ -31,7 +40,7 @@ export function DashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
         <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
           <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>Total de Usuários Cadastrados</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>{users.length}</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>{totalUsers}</div>
         </div>
 
         <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>

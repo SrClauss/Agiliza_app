@@ -44,7 +44,7 @@ export function PlansPage() {
         price_cents: Number(priceCents),
         monthly_unlock_limit: Number(monthlyUnlockLimit),
         stripe_price_id: stripePriceId,
-        features: featArray
+        features: JSON.stringify(featArray)
       })
     });
 
@@ -122,7 +122,12 @@ export function PlansPage() {
                       setPriceCents(p.price_cents);
                       setMonthlyUnlockLimit(p.monthly_unlock_limit);
                       setStripePriceId(p.stripe_price_id || '');
-                      setFeatures(Array.isArray(p.features) ? p.features.join('\n') : '');
+                      try {
+                        const parsed = JSON.parse(p.features);
+                        setFeatures(Array.isArray(parsed) ? parsed.join('\n') : '');
+                      } catch {
+                        setFeatures(p.features || '');
+                      }
                       setShowModal(true);
                     }}
                     style={{ backgroundColor: 'transparent', border: '1px solid #cbd5e1', color: '#0f172a', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}

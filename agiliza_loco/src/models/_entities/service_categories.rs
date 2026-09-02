@@ -19,6 +19,8 @@ pub struct Model {
     pub description: Option<String>,
     pub is_active: bool,
     pub parent_id: Option<String>,
+    pub is_remote: bool,
+    pub is_physical: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

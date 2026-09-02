@@ -1,5 +1,5 @@
 use crate::models::{
-    _entities::{professional_profiles, reviews, users},
+    _entities::{professional_profiles, reviews, users, service_requests},
     reviews::Model as ReviewModel,
 };
 use loco_rs::prelude::*;
@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CreateReviewParams {
     pub professional_profile: uuid::Uuid,
+    pub service_request_id: uuid::Uuid,
     pub rating: i32,
     pub comment: Option<String>,
 }
@@ -48,6 +49,16 @@ async fn create_review(
         return bad_request("You cannot review your own professional profile.");
     }
 
+    // Validate service request and check if already reviewed
+    let s_req = service_requests::Entity::find_by_id(params.service_request_id).one(&ctx.db).await?;
+    let Some(mut s_req) = s_req else {
+        return not_found();
+    };
+    
+    if s_req.is_reviewed {
+        return bad_request("Este pedido já foi avaliado.");
+    }
+
     let comment_val = params.comment.clone().unwrap_or_default();
 
     let rev = reviews::ActiveModel {
@@ -59,6 +70,11 @@ async fn create_review(
     }
     .insert(&ctx.db)
     .await?;
+
+    // Mark service request as reviewed
+    let mut s_req_active: service_requests::ActiveModel = s_req.into();
+    s_req_active.is_reviewed = Set(true);
+    s_req_active.update(&ctx.db).await?;
 
     let _ = ReviewModel::update_professional_rating(&ctx.db, prof.id).await;
 

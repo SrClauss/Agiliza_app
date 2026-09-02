@@ -50,30 +50,48 @@ impl Task for SeedData {
 
         // 2. Categorias
         let categories_data = vec![
-            ("eletrica", "Elétrica", "eletrica", "⚡", "Serviços elétricos em geral", None),
-            ("instalacao-chuveiro", "Instalação de Chuveiro", "instalacao-chuveiro", "🚿", "Instalação e reparo de chuveiros elétricos", Some("eletrica")),
-            ("troca-fiacao", "Troca de Fiação", "troca-fiacao", "🔌", "Manutenção e substituição de fiação residencial", Some("eletrica")),
-            ("encanamento", "Encanamento", "encanamento", "💧", "Reparos hidráulicos e desentupimentos", None),
-            ("desentupimento", "Desentupimento", "desentupimento", "🪠", "Desentupimento de pias, ralos e vasos", Some("encanamento")),
-            ("pintura", "Pintura", "pintura", "🎨", "Pintura residencial e comercial", None),
-            ("limpeza", "Limpeza", "limpeza", "🧹", "Faxina e limpeza pós-obra", None),
-            ("reformas", "Reformas", "reformas", "🔨", "Pequenas reformas e alvenaria", None),
-            ("servicos-juridicos", "Serviços Jurídicos", "servicos-juridicos", "⚖️", "Consultoria, contratos e assessoria jurídica", None),
-            ("direito-trabalhista", "Direito Trabalhista", "direito-trabalhista", "📜", "Assessoria e cálculos trabalhistas", Some("servicos-juridicos")),
-            ("direito-civil", "Direito Civil & Família", "direito-civil", "🏛️", "Inventários, divórcios e contratos civis", Some("servicos-juridicos")),
-            ("psicologia", "Psicologia & Terapia", "psicologia", "🧠", "Atendimento psicológico e terapia", None),
-            ("nutricao", "Nutrição", "nutricao", "🥗", "Consultoria nutricional e reeducação alimentar", None),
-            ("personal-trainer", "Personal Trainer", "personal-trainer", "🏋️", "Treino personalizado presencial e online", None),
-            ("programacao", "Programação & TI", "programacao", "💻", "Desenvolvimento de sites, apps e sistemas", None),
-            ("desenvolvimento-web", "Desenvolvimento Web", "desenvolvimento-web", "🌐", "Criação de sites e e-commerce", Some("programacao")),
-            ("suporte-tecnico", "Assistência Técnica TI", "suporte-tecnico", "🖥️", "Manutenção de computadores e redes", Some("programacao")),
-            ("design-grafico", "Design & Identidade Visual", "design-grafico", "🎨", "Criação de logos e artes visuais", None),
-            ("marketing-digital", "Marketing Digital", "marketing-digital", "📈", "Gestão de redes sociais e anúncios", None),
-            ("mecanica-automotiva", "Mecânica Automotiva", "mecanica-automotiva", "🚗", "Manutenção mecânica e elétrica veicular", None),
-            ("aulas-particulares", "Aulas Particulares", "aulas-particulares", "📚", "Reforço escolar e idiomas", None),
+            // (id, name, slug, icon, desc, parent, is_remote, is_physical)
+            ("reparos-construcao", "Reparos & Construção", "reparos-construcao", "🔨", "Obras, reformas e manutenções", None, false, true),
+            ("eletrica", "Elétrica", "eletrica", "⚡", "Instalações e reparos elétricos", Some("reparos-construcao"), false, true),
+            ("encanamento", "Encanamento", "encanamento", "💧", "Vazamentos e instalações hidráulicas", Some("reparos-construcao"), false, true),
+            ("pedreiro", "Pedreiro", "pedreiro", "🧱", "Alvenaria, reboco, pisos", Some("reparos-construcao"), false, true),
+            
+            ("tecnologia", "Tecnologia & TI", "tecnologia", "💻", "Serviços de informática e desenvolvimento", None, true, true),
+            ("programacao", "Programação & Sistemas", "programacao", "💻", "Desenvolvimento web, mobile e desktop", Some("tecnologia"), true, false),
+            ("suporte-tecnico", "Suporte Técnico", "suporte-tecnico", "🖥️", "Formatação, redes e manutenção de PCs", Some("tecnologia"), true, true),
+
+            ("consultoria-juridico", "Consultoria & Jurídico", "consultoria-juridico", "⚖️", "Advogados e contadores", None, true, true),
+            ("direito-trabalhista", "Direito Trabalhista", "direito-trabalhista", "📜", "Assessoria trabalhista", Some("consultoria-juridico"), true, true),
+            ("direito-civil", "Direito Civil & Família", "direito-civil", "🏛️", "Inventários e divórcios", Some("consultoria-juridico"), true, true),
+            ("contabilidade", "Contabilidade", "contabilidade", "📊", "Imposto de renda e MEI", Some("consultoria-juridico"), true, true),
+
+            ("saude-bem-estar", "Saúde & Bem-estar", "saude-bem-estar", "⚕️", "Profissionais de saúde e esportes", None, true, true),
+            ("psicologia", "Psicologia & Terapia", "psicologia", "🧠", "Atendimento individual e casal", Some("saude-bem-estar"), true, true),
+            ("nutricao", "Nutrição", "nutricao", "🥗", "Dietas e reeducação alimentar", Some("saude-bem-estar"), true, true),
+            ("personal-trainer", "Personal Trainer", "personal-trainer", "🏋️", "Treinos online e presenciais", Some("saude-bem-estar"), true, true),
+
+            ("marketing-design", "Marketing & Design", "marketing-design", "🎨", "Criação visual e marketing digital", None, true, false),
+            ("design-grafico", "Design Gráfico", "design-grafico", "🎨", "Logos, banners e identidade", Some("marketing-design"), true, false),
+            ("marketing-digital", "Marketing Digital", "marketing-digital", "📈", "Gestão de tráfego e redes", Some("marketing-design"), true, false),
+
+            ("aulas-educacao", "Aulas & Educação", "aulas-educacao", "📚", "Professores particulares e tutores", None, true, true),
+            ("aulas-particulares", "Aulas Particulares", "aulas-particulares", "📚", "Reforço escolar", Some("aulas-educacao"), true, true),
+            ("idiomas", "Idiomas", "idiomas", "🗣️", "Aulas de Inglês, Espanhol, etc", Some("aulas-educacao"), true, true),
+
+            ("estetica-beleza", "Estética & Beleza", "estetica-beleza", "💇", "Cabelo, maquiagem e unhas", None, false, true),
+            ("cabelereiro", "Cabelereiro(a)", "cabelereiro", "💇", "Cortes e penteados", Some("estetica-beleza"), false, true),
+            ("manicure", "Manicure/Pedicure", "manicure", "💅", "Unhas decoradas", Some("estetica-beleza"), false, true),
+
+            ("limpeza", "Limpeza", "limpeza", "🧹", "Serviços domésticos e corporativos", None, false, true),
+            ("diarista", "Diarista/Faxina", "diarista", "🧹", "Limpeza residencial", Some("limpeza"), false, true),
+            ("pos-obra", "Limpeza Pós-Obra", "pos-obra", "🧹", "Limpeza pesada", Some("limpeza"), false, true),
+
+            ("eventos", "Eventos & Festas", "eventos", "🎉", "Buffet, fotografia, animação", None, false, true),
+            ("fotografia", "Fotografia", "fotografia", "📸", "Ensaios e cobertura de eventos", Some("eventos"), false, true),
+            ("dj", "DJ/Música", "dj", "🎧", "Som para festas", Some("eventos"), false, true),
         ];
 
-        for (id, name, slug, icon, desc, parent) in categories_data {
+        for (id, name, slug, icon, desc, parent, is_remote, is_physical) in categories_data {
             if service_categories::Entity::find_by_id(id).one(&ctx.db).await?.is_none() {
                 let cat = service_categories::ActiveModel {
                     id: Set(id.to_string()),
@@ -83,6 +101,8 @@ impl Task for SeedData {
                     description: Set(Some(desc.to_string())),
                     is_active: Set(true),
                     parent_id: Set(parent.map(|p| p.to_string())),
+                    is_remote: Set(is_remote),
+                    is_physical: Set(is_physical),
                     created_at: Set(now),
                     updated_at: Set(now),
                 };

@@ -64,6 +64,7 @@ pub struct ServiceRequestDto {
     pub client_profile_image: Option<String>,
     pub professional_profile_image: Option<String>,
     pub is_unlocked: bool,
+    pub is_reviewed: bool,
 }
 
 #[debug_handler]
@@ -174,6 +175,7 @@ async fn list_service_requests(
             client_profile_image: None,
             professional_profile_image: None,
             is_unlocked,
+            is_reviewed: req.is_reviewed,
         };
 
         if let Some(c) = client_user {
@@ -324,6 +326,7 @@ async fn get_service_request(
         client_profile_image: None,
         professional_profile_image: None,
         is_unlocked,
+        is_reviewed: r.is_reviewed,
     };
 
     if let Some(c) = client_user {

@@ -26,6 +26,7 @@ pub struct Model {
     pub quoted_price: Option<Decimal>,
     pub completed_at: Option<DateTimeWithTimeZone>,
     pub cancelled_at: Option<DateTimeWithTimeZone>,
+    pub is_reviewed: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
