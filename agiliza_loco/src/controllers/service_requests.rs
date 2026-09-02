@@ -98,13 +98,12 @@ async fn list_service_requests(
                 .await?;
             let prof_cat_ids: Vec<String> = prof_cats.into_iter().map(|c| c.service_category_id).collect();
 
-            let mut prof_open_cond = sea_orm::Condition::all()
+            // Strictly filter open requests by professional's registered categories, excluding own client requests
+            let prof_open_cond = sea_orm::Condition::all()
+                .add(service_requests::Column::ClientId.ne(user.id))
                 .add(service_requests::Column::ProfessionalProfileId.is_null())
-                .add(service_requests::Column::Status.is_in(vec!["OPEN".to_string(), "PENDING".to_string()]));
-
-            if !prof_cat_ids.is_empty() {
-                prof_open_cond = prof_open_cond.add(service_requests::Column::ServiceCategoryId.is_in(prof_cat_ids));
-            }
+                .add(service_requests::Column::Status.is_in(vec!["OPEN".to_string(), "PENDING".to_string()]))
+                .add(service_requests::Column::ServiceCategoryId.is_in(prof_cat_ids));
 
             condition = condition
                 .add(service_requests::Column::ProfessionalProfileId.eq(prof.id))

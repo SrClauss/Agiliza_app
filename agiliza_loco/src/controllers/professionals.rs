@@ -1,5 +1,5 @@
 use crate::models::{
-    _entities::{professional_profiles, users, featured_professionals, reviews},
+    _entities::{professional_profiles, users, featured_professionals, reviews, professional_profile_categories},
 };
 use loco_rs::prelude::*;
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect, PaginatorTrait, Set};
@@ -36,6 +36,7 @@ pub struct ProfessionalDto {
     pub total_reviews: i32,
     pub subscription_status: String,
     pub profile_image: Option<String>,
+    pub categories: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -46,6 +47,9 @@ pub struct UpdateProfessionalDto {
     pub hourly_rate: Option<rust_decimal::Decimal>,
     pub service_radius_km: Option<i32>,
     pub address: Option<String>,
+    pub latitude: Option<rust_decimal::Decimal>,
+    pub longitude: Option<rust_decimal::Decimal>,
+    pub categories: Option<Vec<String>>,
 }
 
 #[debug_handler]
@@ -92,6 +96,7 @@ async fn list_professionals(
                 total_reviews: p.total_reviews,
                 subscription_status: p.subscription_status,
                 profile_image: u.profile_image.clone(),
+                categories: None,
             });
         }
     }
@@ -139,6 +144,7 @@ async fn list_featured_professionals(
                 total_reviews: p.total_reviews,
                 subscription_status: p.subscription_status,
                 profile_image: u.profile_image.clone(),
+                categories: None,
             });
         }
     }
@@ -172,6 +178,7 @@ async fn list_featured_professionals(
                     total_reviews: p.total_reviews,
                     subscription_status: p.subscription_status,
                     profile_image: u.profile_image.clone(),
+                    categories: None,
                 });
             }
         }
@@ -199,6 +206,12 @@ async fn me(
         .await?
         .ok_or_else(|| Error::NotFound)?;
 
+    let cats = professional_profile_categories::Entity::find()
+        .filter(professional_profile_categories::Column::ProfessionalProfileId.eq(p.id))
+        .all(&ctx.db)
+        .await?;
+    let category_ids: Vec<String> = cats.into_iter().map(|c| c.service_category_id).collect();
+
     format::json(ProfessionalDto {
         id: p.id,
         user_id: p.user_id,
@@ -215,6 +228,7 @@ async fn me(
         total_reviews: p.total_reviews,
         subscription_status: p.subscription_status,
         profile_image: u.profile_image.clone(),
+        categories: Some(category_ids),
     })
 }
 
@@ -262,14 +276,44 @@ async fn update_me(
     if let Some(addr) = params.address {
         active_p.address = Set(Some(addr));
     }
+    if let Some(lat) = params.latitude {
+        active_p.latitude = Set(Some(lat));
+    }
+    if let Some(lng) = params.longitude {
+        active_p.longitude = Set(Some(lng));
+    }
     active_p.updated_at = Set(now);
     let updated_p = active_p.update(&ctx.db).await?;
+
+    if let Some(cats) = params.categories {
+        professional_profile_categories::Entity::delete_many()
+            .filter(professional_profile_categories::Column::ProfessionalProfileId.eq(p.id))
+            .exec(&ctx.db)
+            .await?;
+
+        for cat_id in cats {
+            let new_cat = professional_profile_categories::ActiveModel {
+                id: Set(uuid::Uuid::new_v4()),
+                professional_profile_id: Set(p.id),
+                service_category_id: Set(cat_id),
+                created_at: Set(now),
+                updated_at: Set(now),
+            };
+            new_cat.insert(&ctx.db).await?;
+        }
+    }
 
     let updated_u = users::Entity::find()
         .filter(users::Column::Id.eq(user_id))
         .one(&ctx.db)
         .await?
         .ok_or_else(|| Error::NotFound)?;
+
+    let final_cats = professional_profile_categories::Entity::find()
+        .filter(professional_profile_categories::Column::ProfessionalProfileId.eq(p.id))
+        .all(&ctx.db)
+        .await?;
+    let final_category_ids: Vec<String> = final_cats.into_iter().map(|c| c.service_category_id).collect();
 
     format::json(ProfessionalDto {
         id: updated_p.id,
@@ -287,6 +331,7 @@ async fn update_me(
         total_reviews: updated_p.total_reviews,
         subscription_status: updated_p.subscription_status,
         profile_image: updated_u.profile_image.clone(),
+        categories: Some(final_category_ids),
     })
 }
 
