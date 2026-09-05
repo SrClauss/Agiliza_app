@@ -8,6 +8,7 @@ firebase-credentials.json
 *.pem
 *.key
 .agents/
+agiliza_loco/
 
 # Root temporary image files
 /*.jpeg
