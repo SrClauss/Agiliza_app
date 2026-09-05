@@ -7,6 +7,7 @@ client_secret*.json
 firebase-credentials.json
 *.pem
 *.key
+.agents/
 
 # Root temporary image files
 /*.jpeg
