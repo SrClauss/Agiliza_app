@@ -5,6 +5,8 @@ class ServiceCategory {
   final String? iconUrl;
   final String description;
   final bool isActive;
+  final bool isRemote;
+  final bool isPhysical;
 
   ServiceCategory({
     required this.id,
@@ -13,6 +15,8 @@ class ServiceCategory {
     this.iconUrl,
     required this.description,
     required this.isActive,
+    this.isRemote = false,
+    this.isPhysical = true,
   });
 
   factory ServiceCategory.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,8 @@ class ServiceCategory {
       iconUrl: json['icon']?.toString(),
       description: json['description']?.toString() ?? '',
       isActive: json['is_active'] == true || json['is_active']?.toString() == 'True',
+      isRemote: json['is_remote'] == true || json['is_remote']?.toString() == 'true',
+      isPhysical: json['is_physical'] != false && json['is_physical']?.toString() != 'false',
     );
   }
 }
@@ -253,6 +259,7 @@ class ServiceRequest {
   final String? scheduledDate;
   final double? quotedPrice;
   final String categoryName;
+  final bool isRemote;
   final ProfessionalProfile? professional;
 
   ServiceRequest({
@@ -265,6 +272,7 @@ class ServiceRequest {
     this.scheduledDate,
     this.quotedPrice,
     required this.categoryName,
+    this.isRemote = false,
     this.professional,
   });
 
@@ -289,6 +297,7 @@ class ServiceRequest {
       scheduledDate: json['scheduled_date']?.toString(),
       quotedPrice: _parseDouble(json['quoted_price']),
       categoryName: categoryName,
+      isRemote: json['is_remote'] == true || json['is_remote']?.toString() == 'true',
       professional: professional,
     );
   }

@@ -11,6 +11,7 @@ pub struct RequestQueryParams {
     pub status: Option<String>,
     pub page: Option<u64>,
     pub per_page: Option<u64>,
+    pub is_remote: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -32,6 +33,7 @@ pub struct CreateServiceRequestParams {
     pub address: Option<String>,
     pub latitude: Option<rust_decimal::Decimal>,
     pub longitude: Option<rust_decimal::Decimal>,
+    pub is_remote: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -65,6 +67,7 @@ pub struct ServiceRequestDto {
     pub professional_profile_image: Option<String>,
     pub is_unlocked: bool,
     pub is_reviewed: bool,
+    pub is_remote: bool,
 }
 
 #[debug_handler]
@@ -81,6 +84,9 @@ async fn list_service_requests(
 
     if let Some(status) = &query.status {
         db_query = db_query.filter(service_requests::Column::Status.eq(status));
+    }
+    if let Some(is_remote) = query.is_remote {
+        db_query = db_query.filter(service_requests::Column::IsRemote.eq(is_remote));
     }
 
     let prof = professional_profiles::Entity::find()
@@ -176,6 +182,7 @@ async fn list_service_requests(
             professional_profile_image: None,
             is_unlocked,
             is_reviewed: req.is_reviewed,
+            is_remote: req.is_remote,
         };
 
         if let Some(c) = client_user {
@@ -240,6 +247,7 @@ async fn create_service_request(
         address: Set(params.address),
         latitude: Set(params.latitude),
         longitude: Set(params.longitude),
+        is_remote: Set(params.is_remote.unwrap_or(false)),
         ..Default::default()
     }
     .insert(&ctx.db)
@@ -327,6 +335,7 @@ async fn get_service_request(
         professional_profile_image: None,
         is_unlocked,
         is_reviewed: r.is_reviewed,
+        is_remote: r.is_remote,
     };
 
     if let Some(c) = client_user {

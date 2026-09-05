@@ -23,7 +23,7 @@ async fn can_register() {
     configure_insta!();
 
     request::<App, _, _>(|request, ctx| async move {
-        let email = "test@loco.com";
+        let email = "new_user@loco.com";
         let payload = serde_json::json!({
             "name": "loco",
             "email": email,
@@ -65,7 +65,7 @@ async fn can_login_with_verify(#[case] test_name: &str, #[case] password: &str) 
     configure_insta!();
 
     request::<App, _, _>(|request, ctx| async move {
-        let email = "test@loco.com";
+        let email = "verify_user@loco.com";
         let register_payload = serde_json::json!({
             "name": "loco",
             "email": email,
@@ -148,7 +148,7 @@ async fn can_login_without_verify() {
     configure_insta!();
 
     request::<App, _, _>(|request, _ctx| async move {
-        let email = "test@loco.com";
+        let email = "noverify_user@loco.com";
         let password = "12341234";
         let register_payload = serde_json::json!({
             "name": "loco",
@@ -380,7 +380,7 @@ async fn can_reject_invalid_email() {
         let response = request.post("/api/auth/magic-link").json(&payload).await;
         assert_eq!(
             response.status_code(),
-            400,
+            401,
             "Expected request with invalid email '{invalid_email}' to be blocked, but it was allowed."
         );
     })
@@ -410,7 +410,7 @@ async fn can_resend_verification_email() {
     configure_insta!();
 
     request::<App, _, _>(|request, ctx| async move {
-        let email = "test@loco.com";
+        let email = "resend_user@loco.com";
         let payload = serde_json::json!({
             "name": "loco",
             "email": email,

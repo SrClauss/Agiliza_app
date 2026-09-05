@@ -73,11 +73,30 @@ impl Hooks for App {
         tasks.register(tasks::recalculate_featured::RecalculateFeatured);
     }
 
-    async fn truncate(_ctx: &AppContext) -> Result<()> {
+    async fn truncate(ctx: &AppContext) -> Result<()> {
+        use crate::models::_entities::*;
+        use sea_orm::EntityTrait;
+        let _ = chat_messages::Entity::delete_many().exec(&ctx.db).await;
+        let _ = reviews::Entity::delete_many().exec(&ctx.db).await;
+        let _ = quote_responses::Entity::delete_many().exec(&ctx.db).await;
+        let _ = unlocked_contacts::Entity::delete_many().exec(&ctx.db).await;
+        let _ = service_requests::Entity::delete_many().exec(&ctx.db).await;
+        let _ = featured_professionals::Entity::delete_many().exec(&ctx.db).await;
+        let _ = professional_profile_categories::Entity::delete_many().exec(&ctx.db).await;
+        let _ = portfolio_items::Entity::delete_many().exec(&ctx.db).await;
+        let _ = availability_slots::Entity::delete_many().exec(&ctx.db).await;
+        let _ = favorites::Entity::delete_many().exec(&ctx.db).await;
+        let _ = advertisements::Entity::delete_many().exec(&ctx.db).await;
+        let _ = professional_profiles::Entity::delete_many().exec(&ctx.db).await;
+        let _ = users::Entity::delete_many().exec(&ctx.db).await;
+        let _ = service_categories::Entity::delete_many().exec(&ctx.db).await;
         Ok(())
     }
 
-    async fn seed(_ctx: &AppContext, _base: &std::path::Path) -> Result<()> {
+    async fn seed(ctx: &AppContext, base: &std::path::Path) -> Result<()> {
+        use crate::models::_entities::users;
+        let path = base.join("users.yaml");
+        let _ = loco_rs::db::seed::<users::ActiveModel>(&ctx.db, &path.to_string_lossy()).await;
         Ok(())
     }
 }

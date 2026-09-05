@@ -20,11 +20,15 @@ Ok(
         magic_link_expiration: None,
         phone: None,
         profile_image: None,
-        role: None,
         is_verified: None,
         is_active: None,
         is_staff: None,
         google_id: None,
         auth_provider: None,
+        is_blocked: Some(
+            false,
+        ),
+        blocked_reason: None,
+        cpf: None,
     },
 )

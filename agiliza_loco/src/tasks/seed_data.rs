@@ -92,7 +92,13 @@ impl Task for SeedData {
         ];
 
         for (id, name, slug, icon, desc, parent, is_remote, is_physical) in categories_data {
-            if service_categories::Entity::find_by_id(id).one(&ctx.db).await?.is_none() {
+            if let Some(existing) = service_categories::Entity::find_by_id(id).one(&ctx.db).await? {
+                let mut active: service_categories::ActiveModel = existing.into();
+                active.is_remote = Set(is_remote);
+                active.is_physical = Set(is_physical);
+                active.updated_at = Set(now);
+                active.update(&ctx.db).await?;
+            } else {
                 let cat = service_categories::ActiveModel {
                     id: Set(id.to_string()),
                     name: Set(name.to_string()),

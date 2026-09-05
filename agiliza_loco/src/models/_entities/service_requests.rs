@@ -27,6 +27,7 @@ pub struct Model {
     pub completed_at: Option<DateTimeWithTimeZone>,
     pub cancelled_at: Option<DateTimeWithTimeZone>,
     pub is_reviewed: bool,
+    pub is_remote: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

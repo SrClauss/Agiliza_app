@@ -31,7 +31,6 @@ async fn test_create_professional_profile() {
         name: ActiveValue::Set("Prof Name".to_string()),
         id: ActiveValue::Set(uuid::Uuid::new_v4()),
         api_key: ActiveValue::Set("api-key-test".to_string()),
-        role: ActiveValue::Set(Some("PROFESSIONAL".to_string())),
         ..Default::default()
     }
     .insert(&boot.app_context.db)
@@ -67,7 +66,6 @@ async fn test_find_or_create_for_user() {
         name: ActiveValue::Set("Prof 2".to_string()),
         id: ActiveValue::Set(uuid::Uuid::new_v4()),
         api_key: ActiveValue::Set(uuid::Uuid::new_v4().to_string()),
-        role: ActiveValue::Set(Some("PROFESSIONAL".to_string())),
         ..Default::default()
     }
     .insert(&boot.app_context.db)

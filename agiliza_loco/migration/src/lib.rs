@@ -29,6 +29,7 @@ mod m20260829_023700_add_recipient_id_to_chat_messages;
 mod m20260902_125643_drop_role_from_users;
 mod m20260902_161117_add_is_reviewed_to_service_requests;
 mod m20260902_164707_add_remote_flags_to_service_categories;
+mod m20260905_000001_add_is_remote_to_service_requests;
 pub struct Migrator;
 
 #[async_trait::async_trait]
@@ -60,6 +61,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260902_125643_drop_role_from_users::Migration),
             Box::new(m20260902_161117_add_is_reviewed_to_service_requests::Migration),
             Box::new(m20260902_164707_add_remote_flags_to_service_categories::Migration),
+            Box::new(m20260905_000001_add_is_remote_to_service_requests::Migration),
         ]
     }
 }

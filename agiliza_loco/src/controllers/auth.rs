@@ -327,6 +327,30 @@ async fn onboarding(
     format::json(())
 }
 
+#[debug_handler]
+async fn resend_verification_email(
+    State(ctx): State<AppContext>,
+    Json(params): Json<ForgotParams>,
+) -> Result<Response> {
+    let clean_email = params.email.trim().to_lowercase();
+    let Ok(user) = users::Model::find_by_email(&ctx.db, &clean_email).await else {
+        return format::json(());
+    };
+
+    if user.email_verified_at.is_some() {
+        return format::json(());
+    }
+
+    let user = user
+        .into_active_model()
+        .set_email_verification_sent(&ctx.db)
+        .await?;
+
+    let _ = AuthMailer::send_welcome(&ctx, &user).await;
+
+    format::json(())
+}
+
 pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api/auth")
@@ -339,4 +363,5 @@ pub fn routes() -> Routes {
         .add("/magic-link", post(magic_link))
         .add("/magic-link/{token}", get(magic_link_verify))
         .add("/onboarding", post(onboarding))
+        .add("/resend-verification-mail", post(resend_verification_email))
 }

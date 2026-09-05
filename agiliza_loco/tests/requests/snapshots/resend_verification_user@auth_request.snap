@@ -6,7 +6,7 @@ Model {
     created_at: DATE,
     updated_at: DATE,
     id: PID,
-    email: "test@loco.com",
+    email: "resend_user@loco.com",
     password: "PASSWORD",
     api_key: "lo-PID",
     name: "loco",
@@ -23,9 +23,6 @@ Model {
     magic_link_expiration: None,
     phone: None,
     profile_image: None,
-    role: Some(
-        "CLIENT",
-    ),
     is_verified: Some(
         false,
     ),
@@ -37,4 +34,9 @@ Model {
     ),
     google_id: None,
     auth_provider: None,
+    is_blocked: Some(
+        false,
+    ),
+    blocked_reason: None,
+    cpf: None,
 }

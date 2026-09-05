@@ -3,6 +3,15 @@
 .env*
 !.env.example
 *.env
+client_secret*.json
+firebase-credentials.json
+*.pem
+*.key
+
+# Root temporary image files
+/*.jpeg
+/*.jpg
+/*.png
 
 # SQLite databases
 *.sqlite
