@@ -1,0 +1,334 @@
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Material Design 3 Light Mode Tokens - AgilizaPro Brand Palette */
+  --md-sys-color-primary: #300267;           /* Roxo Principal (Botões Primários) */
+  --md-sys-color-primary-hover: #21014a;     /* Roxo Hover */
+  --md-sys-color-on-primary: #FFFFFF;        /* Texto Branco em Botão Roxo */
+  
+  --md-sys-color-secondary: #B3F63F;         /* Verde Action / Destaques */
+  --md-sys-color-secondary-dark: #059669;    /* Verde Escuro */
+  --md-sys-color-on-secondary: #100130;      /* Texto Escuro em Verde */
+  
+  --md-sys-color-surface: #FFFFFF;           /* Superfície Branca para Cards */
+  --md-sys-color-surface-variant: #F3F4F6;   /* Superfície de Entradas e Chips */
+  
+  --md-sys-color-bg: #F8F9FE;                /* Fundo Geral Claro (Sem cansar a vista) */
+  --md-sys-color-text: #1F2937;              /* Texto Escuro Principal */
+  --md-sys-color-text-muted: #6B7280;        /* Texto Secundário Muted */
+  --md-sys-color-border: #E5E7EB;            /* Borda Suave M3 */
+  --md-sys-color-border-focus: #300267;      /* Foco do Roxo */
+  
+  /* Material Design 3 Elevations (Light Mode Soft Shadows) */
+  --md-elevation-1: 0px 2px 8px rgba(0, 0, 0, 0.05), 0px 1px 3px rgba(0, 0, 0, 0.03);
+  --md-elevation-2: 0px 4px 16px rgba(0, 0, 0, 0.08), 0px 2px 4px rgba(0, 0, 0, 0.04);
+  --md-elevation-3: 0px 8px 24px rgba(0, 0, 0, 0.12), 0px 4px 8px rgba(0, 0, 0, 0.06);
+  --md-elevation-4: 0px 12px 32px rgba(0, 0, 0, 0.16), 0px 6px 12px rgba(0, 0, 0, 0.08);
+
+  /* Material Design 3 Shape System */
+  --md-shape-full: 9999px;
+  --md-shape-xl: 28px;
+  --md-shape-lg: 20px;
+  --md-shape-md: 12px;
+  --md-shape-sm: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--md-sys-color-bg);
+  color: var(--md-sys-color-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* Base App Shell Layout (PWA Mobile Container - Light Mode) */
+.app-shell {
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: var(--md-sys-color-bg);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1), 0 0 1px rgba(0, 0, 0, 0.08);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-bottom: 80px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Material Design 3 Navigation Bar (Fixed Bottom Mobile Dock) */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 640px;
+  margin: 0 auto;
+  height: 72px;
+  background-color: var(--md-sys-color-surface);
+  border-top: 1px solid var(--md-sys-color-border);
+  box-shadow: var(--md-elevation-2);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 999;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--md-sys-color-text-muted);
+  transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+  text-decoration: none;
+}
+
+.nav-icon-container {
+  width: 56px;
+  height: 32px;
+  border-radius: var(--md-shape-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.25s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.nav-item.active .nav-icon-container {
+  background-color: rgba(48, 2, 103, 0.12);
+}
+
+.nav-item.active {
+  color: var(--md-sys-color-primary);
+}
+
+.nav-icon {
+  font-size: 20px;
+  line-height: 1;
+  color: var(--md-sys-color-text-muted);
+  transition: color 0.25s ease;
+}
+
+.nav-item.active .nav-icon {
+  color: var(--md-sys-color-primary);
+}
+
+.nav-text {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* Material 3 Card Component Utility */
+.m3-card {
+  background-color: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-border);
+  border-radius: var(--md-shape-lg);
+  box-shadow: var(--md-elevation-1);
+  padding: 24px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.m3-card:hover {
+  box-shadow: var(--md-elevation-2);
+}
+
+/* Material 3 Badge */
+.m3-badge {
+  background-color: var(--md-sys-color-secondary);
+  color: var(--md-sys-color-on-secondary);
+  padding: 4px 10px;
+  border-radius: var(--md-shape-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Desktop Header (M3 Top App Bar) */
+.desktop-header-container {
+  display: none;
+  background-color: var(--md-sys-color-surface);
+  border-bottom: 1px solid var(--md-sys-color-border);
+  box-shadow: var(--md-elevation-1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 12px 32px;
+}
+
+.desktop-header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.desktop-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.desktop-nav-link {
+  color: var(--md-sys-color-text-muted);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 10px 18px;
+  border-radius: var(--md-shape-full);
+  transition: all 0.2s ease;
+}
+
+.desktop-nav-link:hover, .desktop-nav-link.active {
+  color: var(--md-sys-color-primary);
+  background-color: rgba(48, 2, 103, 0.08);
+}
+
+.desktop-header-user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--md-sys-color-surface-variant);
+  padding: 6px 14px;
+  border-radius: var(--md-shape-full);
+  border: 1px solid var(--md-sys-color-border);
+}
+
+.user-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--md-sys-color-primary);
+}
+
+.user-name-text {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--md-sys-color-text);
+}
+
+.desktop-logout-btn {
+  background: none;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  padding: 8px 16px;
+  border-radius: var(--md-shape-full);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.desktop-logout-btn:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.responsive-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+}
+
+/* Material Design 3 Large Desktop Responsive Rules */
+@media (min-width: 1024px) {
+  .desktop-header-container {
+    display: block;
+  }
+
+  .bottom-nav {
+    display: none !important;
+  }
+
+  .app-shell {
+    max-width: 1200px !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    overflow: visible !important;
+  }
+
+  .main-content {
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    padding: 32px 0px !important;
+    overflow-y: visible !important;
+  }
+
+  .mobile-header-only {
+    display: none !important;
+  }
+
+  .desktop-nav-arrows {
+    display: none !important;
+  }
+
+  .ads-responsive-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 24px !important;
+    overflow-x: visible !important;
+  }
+
+  .ad-card-item {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .pros-responsive-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 24px !important;
+  }
+
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+}
