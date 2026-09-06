@@ -125,6 +125,11 @@ rsync -avz \
   --exclude 'certbot' \
   ./ $VPS_USER@$VPS_IP:$REMOTE_DIR/
 
+if [ -f .env ]; then
+  echo "🔐 Enviando arquivo .env com credenciais de forma segura..."
+  scp .env $VPS_USER@$VPS_IP:$REMOTE_DIR/.env
+fi
+
 # 4. Atualizar Docker na VPS
 if [ "$FORCE_ALL" = "true" ] || [ "$TARGET_SERVICES" = "all" ]; then
   echo "🐳 Reiniciando TODOS os containers na VPS..."
