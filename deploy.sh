@@ -143,7 +143,7 @@ fi
 echo "=================================================="
 echo "🔍 Aguardando estabilidade dos containers (10s)..."
 sleep 10
-ssh $VPS_USER@$VPS_IP "cd $REMOTE_DIR && BAD_CONTAINERS=\$(docker ps --filter 'status=restarting' --filter 'status=exited' --format '{{.Names}}' | grep 'agiliza' || true)
+ssh $VPS_USER@$VPS_IP "cd $REMOTE_DIR && BAD_CONTAINERS=\$(docker ps --filter 'status=restarting' --filter 'status=exited' --format '{{.Names}}' | grep 'agiliza' | grep -v 'certbot' || true)
 if [ ! -z \"\$BAD_CONTAINERS\" ]; then
   echo \"❌ ERRO FATAL: Alguns containers estão quebrando em loop!\"
   echo \"\$BAD_CONTAINERS\"

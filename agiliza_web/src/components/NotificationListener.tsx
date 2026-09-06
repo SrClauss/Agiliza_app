@@ -199,7 +199,7 @@ export default function NotificationListener() {
       })
         .then(res => {
           if (res.status === 401) {
-            logout();
+            // Se falhar temporariamente no polling, apenas para o intervalo de notificação sem deslogar o usuário
             clearInterval(interval);
             return null;
           }
