@@ -272,7 +272,7 @@ export default function Dashboard() {
                 </div>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>{req.title}</h3>
                 <p style={{ fontSize: '0.88rem', color: 'var(--md-sys-color-text-muted)', marginBottom: '14px' }}>
-                  {req.is_remote ? '💻 Atendimento 100% Online / Remoto' : `📍 ${req.address}`}
+                  {req.is_remote ? '💻 Atendimento 100% Online / Remoto' : `📍 ${req.address || 'Endereço não informado'}`}
                 </p>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
@@ -286,10 +286,11 @@ export default function Dashboard() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    style={{ flex: 1, padding: '12px', fontSize: '0.82rem' }} 
+                    style={{ flex: 1, padding: '12px', fontSize: '0.82rem', color: 'var(--md-sys-color-text-muted)', borderColor: 'var(--md-sys-color-border)' }} 
                     onClick={(e) => handleHideRequest(req.id, e)}
+                    title="Ocultar Pedido"
                   >
-                    🙈 Ocultar
+                    🗑️ Ocultar
                   </Button>
                 </div>
               </Card>

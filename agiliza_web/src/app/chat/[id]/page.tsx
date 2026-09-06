@@ -168,7 +168,7 @@ export default function ChatRoom() {
               {isPro ? (requestDetails?.client_name || 'Cliente') : (requestDetails?.title || 'Atendimento do Serviço')}
             </h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.75rem', color: isConnected ? '#10b981' : '#f59e0b', fontWeight: 700 }}>
+              <span style={{ fontSize: '0.75rem', color: isConnected ? '#059669' : '#f59e0b', fontWeight: 700 }}>
                 {isConnected ? '● Online (Tempo Real)' : '○ Reconectando...'}
               </span>
             </div>
@@ -189,30 +189,36 @@ export default function ChatRoom() {
       </header>
 
       {/* Barra de Ações do Ciclo do Pedido */}
-      <div style={{
-        padding: '10px 20px',
+      <details style={{
         backgroundColor: 'var(--md-sys-color-surface-variant)',
         borderBottom: '1px solid var(--md-sys-color-border)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '8px',
         flexShrink: 0,
         zIndex: 10
       }}>
-        <div style={{ fontSize: '0.82rem', color: 'var(--md-sys-color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span>📋</span>
-          <strong>Status:</strong>
-          <span>
-            {(currentStatus === 'PENDING' || currentStatus === 'OPEN') && 'Pendente'}
-            {(currentStatus === 'ACCEPTED' || currentStatus === 'IN_PROGRESS') && 'Em Atendimento 🚀'}
-            {isCompleted && 'Serviço Concluído ✅'}
-            {isCancelled && 'Atendimento Cancelado ❌'}
+        <summary style={{
+          padding: '10px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          listStyle: 'none'
+        }}>
+          <div style={{ fontSize: '0.82rem', color: 'var(--md-sys-color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>📋</span>
+            <strong>Status:</strong>
+            <span style={{ color: isCompleted ? '#059669' : 'inherit' }}>
+              {(currentStatus === 'PENDING' || currentStatus === 'OPEN') && 'Pendente'}
+              {(currentStatus === 'ACCEPTED' || currentStatus === 'IN_PROGRESS') && 'Em Atendimento 🚀'}
+              {isCompleted && 'Serviço Concluído ✅'}
+              {isCancelled && 'Atendimento Cancelado ❌'}
+            </span>
+          </div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--md-sys-color-primary)', fontWeight: 700 }}>
+            Opções ▼
           </span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        </summary>
+        
+        <div style={{ padding: '0 20px 14px 20px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {/* PROFISSIONAL: Apenas Finalizar ou Cancelar */}
           {isPro && (currentStatus === 'ACCEPTED' || currentStatus === 'IN_PROGRESS') && (
             <>
@@ -224,7 +230,7 @@ export default function ChatRoom() {
                   }
                 }}
                 disabled={updatingStatus}
-                style={{ fontSize: '0.78rem', padding: '6px 14px' }}
+                style={{ fontSize: '0.78rem', padding: '6px 14px', backgroundColor: '#059669', borderColor: '#059669' }}
               >
                 ✅ Finalizar Serviço
               </Button>
@@ -237,7 +243,7 @@ export default function ChatRoom() {
                   }
                 }}
                 disabled={updatingStatus}
-                style={{ fontSize: '0.78rem', padding: '6px 14px', color: '#ef4444', borderColor: '#ef4444' }}
+                style={{ fontSize: '0.78rem', padding: '6px 14px', color: '#dc2626', borderColor: '#dc2626' }}
               >
                 ❌ Cancelar
               </Button>
@@ -258,7 +264,7 @@ export default function ChatRoom() {
             )
           )}
         </div>
-      </div>
+      </details>
 
       {/* Histórico de Mensagens com Scroll Interno Próprio */}
       <div style={{ 

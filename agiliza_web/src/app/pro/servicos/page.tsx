@@ -194,10 +194,11 @@ export default function MeusServicos() {
 
                   <Button 
                     variant="outline" 
-                    style={{ flex: 1, padding: '10px', fontSize: '0.8rem', color: 'var(--color-text-muted)', borderColor: 'rgba(255,255,255,0.2)' }}
+                    style={{ padding: '10px', minWidth: '44px', fontSize: '0.8rem', color: 'var(--color-text-muted)', borderColor: 'rgba(255,255,255,0.2)' }}
                     onClick={() => handleHideService(req.id)}
+                    title="Ocultar"
                   >
-                    🙈 Ocultar
+                    🗑️
                   </Button>
                 </div>
               </Card>

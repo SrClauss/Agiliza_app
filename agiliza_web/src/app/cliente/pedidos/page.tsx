@@ -88,6 +88,26 @@ export default function PedidosCliente() {
     handleUpdateStatus(reqId, 'COMPLETED', 'Deseja marcar este serviço como concluído?');
   };
 
+  const handleDeleteRequest = async (reqId: string) => {
+    if (!confirm('Tem certeza absoluta de que deseja apagar este pedido? Esta ação não pode ser desfeita.')) return;
+    const token = localStorage.getItem('agiliza_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`/api/services/requests/${reqId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        alert('Pedido apagado com sucesso.');
+        fetchRequests(page);
+      } else {
+        alert('Falha ao apagar pedido.');
+      }
+    } catch(e) {
+      alert('Erro de conexão.');
+    }
+  };
+
   const filteredRequests = requests.filter(req => {
     if (statusFilter === 'ALL') return true;
     const isFinished = req.status === 'COMPLETED' || req.status === 'CANCELLED';
@@ -204,6 +224,14 @@ export default function PedidosCliente() {
                       ⭐ Avaliar Profissional
                     </Button>
                   )}
+
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleDeleteRequest(req.id)}
+                    style={{ flex: 1, fontSize: '0.88rem', padding: '10px', color: '#ef4444', borderColor: '#ef4444' }}
+                  >
+                    🗑️ Apagar Pedido
+                  </Button>
                 </div>
               </Card>
             );

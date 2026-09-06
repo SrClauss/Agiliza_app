@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import dynamic from 'next/dynamic';
+import AddressAutocomplete, { AddressResult } from '@/components/AddressAutocomplete';
 
 const MapPickerModal = dynamic(() => import('@/components/MapPickerModal'), { ssr: false });
 
@@ -31,6 +32,7 @@ export default function EnderecosCliente() {
   const [neighborhood, setNeighborhood] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
+  const [gpsStatus, setGpsStatus] = useState('');
 
   useEffect(() => {
     const stored = localStorage.getItem('agiliza_client_addresses');
@@ -58,6 +60,44 @@ export default function EnderecosCliente() {
   const saveAddresses = (newAddrs: Address[]) => {
     setAddresses(newAddrs);
     localStorage.setItem('agiliza_client_addresses', JSON.stringify(newAddrs));
+  };
+
+  const handleSelectAddress = (result: AddressResult) => {
+    if (result.street) setStreet(result.street);
+    if (result.district) setNeighborhood(result.district);
+    if (result.city) setCity(result.city);
+    if (result.state) setState(result.state);
+  };
+
+  const handleGpsLocation = () => {
+    if (!("geolocation" in navigator)) {
+      setGpsStatus("Geolocalização não suportada.");
+      return;
+    }
+    setGpsStatus("Obtendo coordenadas do GPS...");
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const data = await res.json();
+          const road = data.address?.road || data.address?.suburb || '';
+          const lCity = data.address?.city || data.address?.town || data.address?.municipality || '';
+          const lState = data.address?.state || '';
+          if (road) setStreet(road);
+          if (data.address?.suburb) setNeighborhood(data.address.suburb);
+          if (lCity) setCity(lCity);
+          if (lState) setState(lState);
+          setGpsStatus("✅ Localização GPS obtida com sucesso!");
+        } catch(e) {
+          setGpsStatus("✅ Coordenadas GPS obtidas, mas falha ao buscar nome da rua.");
+        }
+      },
+      (err) => {
+        setGpsStatus("Erro ou permissão de GPS negada.");
+      }
+    );
   };
 
   const handleAddAddress = (e: React.FormEvent) => {
@@ -167,6 +207,36 @@ export default function EnderecosCliente() {
               style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text)' }}
             />
             
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-muted)', display: 'block' }}>
+                Buscar Endereço ou CEP:
+              </label>
+              <AddressAutocomplete
+                value={street ? `${street}${city ? ', ' + city : ''}` : ''}
+                onSelect={handleSelectAddress}
+                placeholder="Digite seu CEP ou endereço completo..."
+              />
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <Button type="button" variant="outline" onClick={handleGpsLocation} style={{ width: '100%', padding: '12px', fontSize: '0.88rem' }}>
+                  🎯 Usar GPS Atual
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsMapModalOpen(true)}
+                  style={{ width: '100%', padding: '12px', fontSize: '0.88rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
+                >
+                  📍 Escolher no Mapa
+                </Button>
+              </div>
+              {gpsStatus && (
+                <p style={{ fontSize: '0.82rem', color: 'var(--color-primary)', margin: 0, textAlign: 'center', fontWeight: 600 }}>
+                  {gpsStatus}
+                </p>
+              )}
+            </div>
+
             <div style={{ padding: '12px', backgroundColor: 'var(--color-bg)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>Localização selecionada:</p>
               {street ? (
@@ -174,16 +244,6 @@ export default function EnderecosCliente() {
               ) : (
                 <p style={{ fontSize: '0.95rem', margin: 0, color: '#ef4444' }}>Nenhum local selecionado</p>
               )}
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                fullWidth 
-                onClick={() => setIsMapModalOpen(true)}
-                style={{ marginTop: '12px', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
-              >
-                📍 Escolher no Mapa
-              </Button>
             </div>
 
             <Input 

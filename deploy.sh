@@ -141,6 +141,18 @@ else
 fi
 
 echo "=================================================="
+echo "🔍 Aguardando estabilidade dos containers (10s)..."
+sleep 10
+ssh $VPS_USER@$VPS_IP "cd $REMOTE_DIR && BAD_CONTAINERS=\$(docker ps --filter 'status=restarting' --filter 'status=exited' --format '{{.Names}}' | grep 'agiliza' || true)
+if [ ! -z \"\$BAD_CONTAINERS\" ]; then
+  echo \"❌ ERRO FATAL: Alguns containers estão quebrando em loop!\"
+  echo \"\$BAD_CONTAINERS\"
+  exit 1
+else
+  echo \"✅ Todos os containers subiram e estão rodando estáveis!\"
+fi" || exit 1
+
+echo "=================================================="
 echo "✅ DEPLOY SELETIVO CONCLUÍDO COM SUCESSO!"
 echo "🌐 App Web:      https://app.agilizapro.net (ou https://$VPS_IP)"
 echo "👑 Painel Admin:  https://admin.agilizapro.net"

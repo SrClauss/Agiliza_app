@@ -400,57 +400,22 @@ export default function NovoPedido() {
                   />
                 </div>
 
-                {/* Opção de Atendimento Remoto */}
-                {(() => {
-                  const selectedCatId = subCategory || parentCategory;
-                  const currentCatObj = allCategories.find(c => c.id === selectedCatId);
-                  if (!currentCatObj || !currentCatObj.is_remote) return null;
+                {/* Opção de Atendimento Remoto / Presencial */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
+                  <label style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--md-sys-color-text)' }}>Modalidade de Atendimento</label>
+                  
+                  <div style={{ display: 'flex', gap: '16px' }}>
+                    <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '16px', borderRadius: 'var(--md-shape-md)', border: `2px solid ${!isRemoteChosen ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-border)'}`, cursor: 'pointer', backgroundColor: !isRemoteChosen ? 'var(--md-sys-color-surface-variant)' : 'transparent', transition: 'all 0.2s' }}>
+                      <input type="radio" checked={!isRemoteChosen} onChange={() => setIsRemoteChosen(false)} style={{ accentColor: 'var(--md-sys-color-primary)' }} />
+                      <span style={{ fontWeight: 600 }}>📍 Presencial</span>
+                    </label>
 
-                  return (
-                    <div style={{
-                      padding: '18px 20px',
-                      borderRadius: 'var(--md-shape-lg)',
-                      backgroundColor: isRemoteChosen ? 'rgba(76, 175, 80, 0.12)' : 'var(--md-sys-color-surface-variant)',
-                      border: `2px solid ${isRemoteChosen ? '#4caf50' : 'var(--md-sys-color-border)'}`,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '10px',
-                      transition: 'all 0.25s ease'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span style={{ fontSize: '1.8rem' }}>💻</span>
-                          <div>
-                            <strong style={{ fontSize: '0.98rem', color: 'var(--md-sys-color-text)', display: 'block' }}>Modalidade do Atendimento</strong>
-                            <span style={{ fontSize: '0.82rem', color: 'var(--md-sys-color-text-muted)' }}>
-                              {!currentCatObj.is_physical 
-                                ? 'Esta categoria é realizada exclusivamente online / remoto.'
-                                : 'Esta categoria permite atendimento presencial ou online.'}
-                            </span>
-                          </div>
-                        </div>
-                        {currentCatObj.is_physical ? (
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', color: 'var(--md-sys-color-primary)', userSelect: 'none' }}>
-                            <input 
-                              type="checkbox"
-                              checked={isRemoteChosen}
-                              onChange={(e) => setIsRemoteChosen(e.target.checked)}
-                              style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#4caf50' }}
-                            />
-                            Aceito atendimento online
-                          </label>
-                        ) : (
-                          <span style={{ padding: '6px 12px', backgroundColor: '#4caf50', color: '#fff', borderRadius: '16px', fontSize: '0.78rem', fontWeight: 700 }}>Exclusivo Online</span>
-                        )}
-                      </div>
-                      {isRemoteChosen && (
-                        <div style={{ padding: '8px 12px', backgroundColor: 'rgba(76, 175, 80, 0.15)', borderRadius: 'var(--md-shape-sm)', color: '#2e7d32', fontSize: '0.82rem', fontWeight: 600 }}>
-                          ✨ Excelente! Profissionais qualificados de todo o Brasil poderão enviar propostas para este pedido.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                    <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '16px', borderRadius: 'var(--md-shape-md)', border: `2px solid ${isRemoteChosen ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-border)'}`, cursor: 'pointer', backgroundColor: isRemoteChosen ? 'var(--md-sys-color-surface-variant)' : 'transparent', transition: 'all 0.2s' }}>
+                      <input type="radio" checked={isRemoteChosen} onChange={() => setIsRemoteChosen(true)} style={{ accentColor: 'var(--md-sys-color-primary)' }} />
+                      <span style={{ fontWeight: 600 }}>💻 Remoto / Online</span>
+                    </label>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -458,7 +423,14 @@ export default function NovoPedido() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                 <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--md-sys-color-primary)' }}>3. Local do Atendimento</h2>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {isRemoteChosen ? (
+                  <div style={{ padding: '24px', textAlign: 'center', backgroundColor: 'rgba(76, 175, 80, 0.12)', color: '#2e7d32', borderRadius: 'var(--md-shape-lg)', border: '2px dashed #4caf50' }}>
+                    <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>🌍</span>
+                    <strong style={{ fontSize: '1.1rem', display: 'block', marginBottom: '4px' }}>Atendimento 100% Online</strong>
+                    <span style={{ fontSize: '0.9rem' }}>Nenhum endereço é necessário. Você receberá propostas de profissionais de qualquer lugar do país!</span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   
                   {/* Opcao A: GPS Nativo */}
                   <label style={{ 
@@ -553,6 +525,7 @@ export default function NovoPedido() {
                   )}
 
                 </div>
+                )}
               </div>
             )}
 
