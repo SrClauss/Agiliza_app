@@ -311,58 +311,7 @@ export default function ChatRoom() {
         bottom: 0,
         zIndex: 50
       }}>
-        {/* Barra de Opções do Serviço (Acima do Campo de Digitação) */}
-        {!isCompleted && !isCancelled && (
-          <div style={{
-            padding: '8px 20px',
-            backgroundColor: 'var(--md-sys-color-surface-variant)',
-            borderBottom: '1px solid var(--md-sys-color-border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '8px',
-            flexWrap: 'wrap'
-          }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--md-sys-color-text-muted)' }}>
-              Opções do Pedido:
-            </span>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {/* Botão Finalizar Serviço (para Cliente e Profissional) */}
-              <Button
-                variant="primary"
-                onClick={() => {
-                  if (confirm(isPro 
-                    ? 'Deseja marcar este serviço como finalizado?' 
-                    : 'Deseja finalizar o projeto e avaliar o profissional?'
-                  )) {
-                    handleUpdateStatus('COMPLETED');
-                  }
-                }}
-                disabled={updatingStatus}
-                style={{ fontSize: '0.78rem', padding: '6px 14px', backgroundColor: '#059669', borderColor: '#059669', fontWeight: 700 }}
-              >
-                ✅ Finalizar Projeto
-              </Button>
-
-              {/* Botão Cancelar */}
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (confirm('Tem certeza que deseja cancelar este atendimento?')) {
-                    handleUpdateStatus('CANCELLED');
-                  }
-                }}
-                disabled={updatingStatus}
-                style={{ fontSize: '0.78rem', padding: '6px 14px', color: '#dc2626', borderColor: '#dc2626' }}
-              >
-                ❌ Cancelar
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div style={{ padding: '14px 20px', paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))' }}>
+        <div style={{ padding: '14px 20px', paddingBottom: '0' }}>
           {isCancelled ? (
             <div style={{ textAlign: 'center', color: '#ef4444', fontSize: '0.88rem', padding: '8px', fontWeight: 600 }}>
               ❌ Este atendimento foi cancelado e não aceita mais mensagens.
@@ -398,6 +347,55 @@ export default function ChatRoom() {
             </form>
           )}
         </div>
+
+        {/* Barra de Opções do Serviço (Abaixo do Campo de Digitação) */}
+        {!isCompleted && !isCancelled && (
+          <div style={{
+            padding: '8px 20px',
+            paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
+            backgroundColor: 'transparent',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            gap: '12px',
+            flexWrap: 'wrap'
+          }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--md-sys-color-text-muted)' }}>
+              Opções:
+            </span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  if (confirm(isPro 
+                    ? 'Deseja marcar este serviço como finalizado?' 
+                    : 'Deseja finalizar o projeto e avaliar o profissional?'
+                  )) {
+                    handleUpdateStatus('COMPLETED');
+                  }
+                }}
+                disabled={updatingStatus}
+                style={{ fontSize: '0.75rem', padding: '6px 12px', backgroundColor: '#059669', borderColor: '#059669', fontWeight: 700 }}
+              >
+                ✅ Finalizar
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (confirm('Tem certeza que deseja cancelar este atendimento?')) {
+                    handleUpdateStatus('CANCELLED');
+                  }
+                }}
+                disabled={updatingStatus}
+                style={{ fontSize: '0.75rem', padding: '6px 12px', color: '#dc2626', borderColor: '#dc2626' }}
+              >
+                ❌ Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal de Avaliação para o Cliente */}

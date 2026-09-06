@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
@@ -13,8 +13,15 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
   const role = useAuthStore((state) => state.context);
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     // Ignorar rotas públicas (Landing, Login, Cadastro)
     if (pathname === '/' || pathname?.startsWith('/login') || pathname?.startsWith('/cadastro')) {
       return;
@@ -42,7 +49,7 @@ export default function RoleGuard({ children }: { children: React.ReactNode }) {
       router.push('/cliente');
       return;
     }
-  }, [pathname, router, role, token, user]);
+  }, [pathname, router, role, token, user, mounted]);
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
