@@ -59,7 +59,7 @@ elif [ -n "$TARGET_SERVICES" ]; then
   esac
 
   DOCKER_SERVICES=""
-  [ "$BUILD_BACKEND" = "true" ] && DOCKER_SERVICES="$DOCKER_SERVICES agiliza_backend"
+  [ "$BUILD_BACKEND" = "true" ] && DOCKER_SERVICES="$DOCKER_SERVICES agiliza_loco"
   [ "$BUILD_WEB" = "true" ] && DOCKER_SERVICES="$DOCKER_SERVICES agiliza_web"
   [ "$BUILD_ADMIN" = "true" ] && DOCKER_SERVICES="$DOCKER_SERVICES agiliza_admin"
 else
@@ -83,7 +83,7 @@ else
   fi
 
   DOCKER_SERVICES=""
-  [ "$BUILD_BACKEND" = "true" ] && DOCKER_SERVICES="$DOCKER_SERVICES agiliza_backend"
+  [ "$BUILD_BACKEND" = "true" ] && DOCKER_SERVICES="$DOCKER_SERVICES agiliza_loco"
   [ "$BUILD_WEB" = "true" ] && DOCKER_SERVICES="$DOCKER_SERVICES agiliza_web"
   [ "$BUILD_ADMIN" = "true" ] && DOCKER_SERVICES="$DOCKER_SERVICES agiliza_admin"
 fi
