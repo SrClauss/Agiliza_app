@@ -12,6 +12,8 @@ export default function ChatList() {
   const context = useAuthStore(s => s.context);
   const isPro = context === 'PROFESSIONAL' || (context as string) === 'PRO';
 
+  const user = useAuthStore(s => s.user);
+
   useEffect(() => {
     const token = localStorage.getItem('agiliza_token');
     
@@ -20,19 +22,25 @@ export default function ChatList() {
       return;
     }
 
-    fetch('/api/services/requests', {
+    const roleParam = isPro ? 'PRO' : 'CLIENT';
+    fetch(`/api/services/requests?role=${roleParam}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          // Se for profissional, MOSTRA APENAS pedidos desbloqueados (comprados) ou aceitos
-          // Se for cliente, MOSTRA apenas os pedidos que o cliente criou
+          const currentUserId = user?.pid;
+
           const filtered = data.filter((r: any) => {
             if (isPro) {
-              return r.is_unlocked === true || r.status === 'ACCEPTED' || r.status === 'IN_PROGRESS';
+              // No papel Profissional: o usuário NÃO pode ser o cliente criador do pedido
+              const isNotOwnClient = currentUserId ? r.client_id !== currentUserId : true;
+              const isUnlockedOrActive = r.is_unlocked === true || r.status === 'ACCEPTED' || r.status === 'IN_PROGRESS';
+              return isNotOwnClient && isUnlockedOrActive;
+            } else {
+              // No papel Cliente: apenas os pedidos criados pelo próprio usuário como cliente
+              return currentUserId ? r.client_id === currentUserId : true;
             }
-            return true;
           });
 
           setRequests(filtered);
@@ -40,7 +48,7 @@ export default function ChatList() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [router, isPro]);
+  }, [router, isPro, user?.pid]);
 
   return (
     <div style={{ padding: '24px', paddingBottom: '80px', backgroundColor: 'var(--md-sys-color-bg)', minHeight: '100vh' }}>

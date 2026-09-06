@@ -51,7 +51,7 @@ export default function Dashboard() {
       })
       .catch(console.error);
 
-    fetch(`/api/services/requests?page=${page}&per_page=10`, {
+    fetch(`/api/services/requests?page=${page}&per_page=10&role=PRO`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -144,16 +144,23 @@ export default function Dashboard() {
 
   const [filterMode, setFilterMode] = useState<'ALL' | 'REMOTE' | 'PRESENTIAL'>('ALL');
 
+  const isOpportunityPending = (r: any) => {
+    const isAvailableStatus = r.status === 'PENDING' || r.status === 'OPEN';
+    const notHidden = !hiddenIds.includes(r.id);
+    const notUnlocked = !r.is_unlocked && r.status !== 'ACCEPTED' && r.status !== 'IN_PROGRESS' && r.status !== 'COMPLETED';
+    return isAvailableStatus && notHidden && notUnlocked;
+  };
+
   const pendingOpportunities = requests
-    .filter(r => (r.status === 'PENDING' || r.status === 'OPEN') && !hiddenIds.includes(r.id) && !r.is_unlocked)
+    .filter(isOpportunityPending)
     .filter(r => {
       if (filterMode === 'REMOTE') return r.is_remote;
       if (filterMode === 'PRESENTIAL') return !r.is_remote;
       return true;
     });
   
-  const totalPendingCount = requests.filter(r => (r.status === 'PENDING' || r.status === 'OPEN') && !hiddenIds.includes(r.id) && !r.is_unlocked).length;
-  const remoteCount = requests.filter(r => (r.status === 'PENDING' || r.status === 'OPEN') && !hiddenIds.includes(r.id) && !r.is_unlocked && r.is_remote).length;
+  const totalPendingCount = requests.filter(isOpportunityPending).length;
+  const remoteCount = requests.filter(r => isOpportunityPending(r) && r.is_remote).length;
   const presentialCount = totalPendingCount - remoteCount;
   const unlockedServices = requests.filter(r => (r.status === 'ACCEPTED' || r.status === 'IN_PROGRESS' || r.is_unlocked));
 

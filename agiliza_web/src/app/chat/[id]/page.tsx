@@ -188,84 +188,6 @@ export default function ChatRoom() {
         </span>
       </header>
 
-      {/* Barra de Ações do Ciclo do Pedido */}
-      <details style={{
-        backgroundColor: 'var(--md-sys-color-surface-variant)',
-        borderBottom: '1px solid var(--md-sys-color-border)',
-        flexShrink: 0,
-        zIndex: 10
-      }}>
-        <summary style={{
-          padding: '10px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          cursor: 'pointer',
-          listStyle: 'none'
-        }}>
-          <div style={{ fontSize: '0.82rem', color: 'var(--md-sys-color-text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>📋</span>
-            <strong>Status:</strong>
-            <span style={{ color: isCompleted ? '#059669' : 'inherit' }}>
-              {(currentStatus === 'PENDING' || currentStatus === 'OPEN') && 'Pendente'}
-              {(currentStatus === 'ACCEPTED' || currentStatus === 'IN_PROGRESS') && 'Em Atendimento 🚀'}
-              {isCompleted && 'Serviço Concluído ✅'}
-              {isCancelled && 'Atendimento Cancelado ❌'}
-            </span>
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--md-sys-color-primary)', fontWeight: 700 }}>
-            Opções ▼
-          </span>
-        </summary>
-        
-        <div style={{ padding: '0 20px 14px 20px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {/* PROFISSIONAL: Apenas Finalizar ou Cancelar */}
-          {isPro && (currentStatus === 'ACCEPTED' || currentStatus === 'IN_PROGRESS') && (
-            <>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  if (confirm('Deseja marcar este serviço como finalizado? O cliente receberá a notificação para confirmar e avaliar.')) {
-                    handleUpdateStatus('COMPLETED');
-                  }
-                }}
-                disabled={updatingStatus}
-                style={{ fontSize: '0.78rem', padding: '6px 14px', backgroundColor: '#059669', borderColor: '#059669' }}
-              >
-                ✅ Finalizar Serviço
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (confirm('Tem certeza que deseja cancelar este atendimento? O serviço deixará de ficar disponível para contato.')) {
-                    handleUpdateStatus('CANCELLED');
-                  }
-                }}
-                disabled={updatingStatus}
-                style={{ fontSize: '0.78rem', padding: '6px 14px', color: '#dc2626', borderColor: '#dc2626' }}
-              >
-                ❌ Cancelar
-              </Button>
-            </>
-          )}
-
-          {!isPro && isCompleted && (
-            !requestDetails?.is_reviewed ? (
-              <Button
-                variant="primary"
-                onClick={() => setShowReviewModal(true)}
-                style={{ fontSize: '0.78rem', padding: '6px 14px', backgroundColor: '#f59e0b', color: '#FFFFFF', border: 'none', fontWeight: 700 }}
-              >
-                ⭐ Avaliar Profissional
-              </Button>
-            ) : (
-              <span style={{ fontSize: '0.8rem', color: '#f59e0b', fontWeight: 600 }}>⭐ Profissional Avaliado</span>
-            )
-          )}
-        </div>
-      </details>
-
       {/* Histórico de Mensagens com Scroll Interno Próprio */}
       <div style={{ 
         flex: 1, 
@@ -379,10 +301,8 @@ export default function ChatRoom() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar FIXA Sempre Visível no Rodapé de Todos os Dispositivos */}
+      {/* Input Bar FIXA Sempre Visível no Rodapé com Barra de Opções Superior */}
       <div style={{ 
-        padding: '14px 20px', 
-        paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
         backgroundColor: 'var(--md-sys-color-surface)', 
         borderTop: '1px solid var(--md-sys-color-border)', 
         boxShadow: '0 -2px 10px rgba(0,0,0,0.15)',
@@ -391,40 +311,93 @@ export default function ChatRoom() {
         bottom: 0,
         zIndex: 50
       }}>
-        {isCancelled ? (
-          <div style={{ textAlign: 'center', color: '#ef4444', fontSize: '0.88rem', padding: '8px', fontWeight: 600 }}>
-            ❌ Este atendimento foi cancelado e não aceita mais mensagens.
+        {/* Barra de Opções do Serviço (Acima do Campo de Digitação) */}
+        {!isCompleted && !isCancelled && (
+          <div style={{
+            padding: '8px 20px',
+            backgroundColor: 'var(--md-sys-color-surface-variant)',
+            borderBottom: '1px solid var(--md-sys-color-border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            flexWrap: 'wrap'
+          }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--md-sys-color-text-muted)' }}>
+              Opções do Pedido:
+            </span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* Botão Finalizar Serviço (para Cliente e Profissional) */}
+              <Button
+                variant="primary"
+                onClick={() => {
+                  if (confirm(isPro 
+                    ? 'Deseja marcar este serviço como finalizado?' 
+                    : 'Deseja finalizar o projeto e avaliar o profissional?'
+                  )) {
+                    handleUpdateStatus('COMPLETED');
+                  }
+                }}
+                disabled={updatingStatus}
+                style={{ fontSize: '0.78rem', padding: '6px 14px', backgroundColor: '#059669', borderColor: '#059669', fontWeight: 700 }}
+              >
+                ✅ Finalizar Projeto
+              </Button>
+
+              {/* Botão Cancelar */}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (confirm('Tem certeza que deseja cancelar este atendimento?')) {
+                    handleUpdateStatus('CANCELLED');
+                  }
+                }}
+                disabled={updatingStatus}
+                style={{ fontSize: '0.78rem', padding: '6px 14px', color: '#dc2626', borderColor: '#dc2626' }}
+              >
+                ❌ Cancelar
+              </Button>
+            </div>
           </div>
-        ) : isCompleted ? (
-          <div style={{ textAlign: 'center', color: '#10b981', fontSize: '0.88rem', padding: '8px', fontWeight: 600 }}>
-            ✅ Serviço Finalizado. O chat foi encerrado. (Utilizem o WhatsApp para continuar conversando)
-          </div>
-        ) : (
-          <form onSubmit={handleSend} style={{ display: 'flex', gap: '12px' }}>
-            <input 
-              type="text" 
-              placeholder="Digite uma mensagem..." 
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              disabled={isCancelled || isCompleted}
-              style={{ 
-                flex: 1, padding: '12px 18px', borderRadius: 'var(--md-shape-full)', 
-                border: '1.5px solid var(--md-sys-color-border)', backgroundColor: 'var(--md-sys-color-surface-variant)', color: 'var(--md-sys-color-text)',
-                outline: 'none', fontSize: '0.95rem'
-              }} 
-            />
-            <Button 
-              type="submit"
-              variant="primary"
-              disabled={isSending || !inputText.trim() || isCancelled || isCompleted}
-              style={{ 
-                width: '46px', height: '46px', padding: 0, borderRadius: 'var(--md-shape-full)', flexShrink: 0
-              }}
-            >
-              ➤
-            </Button>
-          </form>
         )}
+
+        <div style={{ padding: '14px 20px', paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))' }}>
+          {isCancelled ? (
+            <div style={{ textAlign: 'center', color: '#ef4444', fontSize: '0.88rem', padding: '8px', fontWeight: 600 }}>
+              ❌ Este atendimento foi cancelado e não aceita mais mensagens.
+            </div>
+          ) : isCompleted ? (
+            <div style={{ textAlign: 'center', color: '#10b981', fontSize: '0.88rem', padding: '8px', fontWeight: 600 }}>
+              ✅ Serviço Finalizado. O chat foi encerrado.
+            </div>
+          ) : (
+            <form onSubmit={handleSend} style={{ display: 'flex', gap: '12px' }}>
+              <input 
+                type="text" 
+                placeholder="Digite uma mensagem..." 
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                disabled={isCancelled || isCompleted}
+                style={{ 
+                  flex: 1, padding: '12px 18px', borderRadius: 'var(--md-shape-full)', 
+                  border: '1.5px solid var(--md-sys-color-border)', backgroundColor: 'var(--md-sys-color-surface-variant)', color: 'var(--md-sys-color-text)',
+                  outline: 'none', fontSize: '0.95rem'
+                }} 
+              />
+              <Button 
+                type="submit"
+                variant="primary"
+                disabled={isSending || !inputText.trim() || isCancelled || isCompleted}
+                style={{ 
+                  width: '46px', height: '46px', padding: 0, borderRadius: 'var(--md-shape-full)', flexShrink: 0
+                }}
+              >
+                ➤
+              </Button>
+            </form>
+          )}
+        </div>
       </div>
 
       {/* Modal de Avaliação para o Cliente */}
